@@ -15,6 +15,7 @@
 extern char GUI_buffer[GUI_bufferSize];
 extern UART_HandleTypeDef huart3;
 
+void Integer_to_IP(uint32_t integerIP, char *IP_string);
 void DiagnosticToolsInit(void);
 
 #endif /* INC_DIAGNOSTIC_TOOLS_H_ */

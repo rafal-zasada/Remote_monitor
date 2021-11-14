@@ -14,43 +14,34 @@ char GUI_buffer[GUI_bufferSize] = {0};
 osThreadId GUI_UART_TaskHandle;
 
 
-// osThreadList() (or vTaskList())  calls uxTaskGetSystemState() -	// shows the state of each task, including the task's stack high water mark (the smaller the high water mark
-																	// number the closer the task has come to overflowing its stack). Results are in words!
-																	// configUSE_TRACE_FACILITY 1 and configUSE_STATS_FORMATTING_FUNCTIONS 1.
 
+
+void Integer_to_IP(uint32_t integerIP, char *IP_string);
 void GUI_UART_Task(void const *argument);
 
 void DiagnosticToolsInit(void)
 {
 	  osThreadDef(GUI_UART_Task111, GUI_UART_Task, osPriorityNormal, 0, 200);  // in words !
 	  GUI_UART_TaskHandle = osThreadCreate(osThread(GUI_UART_Task111), NULL);
-
-//		snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "uxTaskGetStackHighWaterMark() = %lu\n\n", uxTaskGetStackHighWaterMark(NULL));
-//		HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 }
 
 void GUI_UART_Task(void const *argument)
 {
-
-	//test
-	char aaa[256] = {0};
-
-//aaa[19] = 7;
-
-
 	while(1)
 	{
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-			snprintf(GUI_buffer, sizeof(GUI_buffer), "Test value \n");
+			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Test value \n");
 			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 50);
 
-			snprintf(GUI_buffer, sizeof(GUI_buffer), "IP = %lu\n\n", gnetif.ip_addr.addr);
+			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
 			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
 			// print freeRTOS statistics
+			// shows the state of each task, including the task's stack high water mark (the smaller the high water mark number the closer the task has come to
+			// overflowing its stack). Results are in words! Set configUSE_TRACE_FACILITY 1 and configUSE_STATS_FORMATTING_FUNCTIONS 1 to use this function.
 			osThreadList((unsigned char*)GUI_buffer);
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer - 1, strlen(GUI_buffer) + 1, 200);
 
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\nxPortGetFreeHeapSize() = %u\n\n", xPortGetFreeHeapSize());
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
@@ -58,11 +49,31 @@ void GUI_UART_Task(void const *argument)
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "xPortGetMinimumEverFreeHeapSize() = %u\n\n", xPortGetMinimumEverFreeHeapSize());
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "uxTaskGetStackHighWaterMark() = %lu\n\n", uxTaskGetStackHighWaterMark(NULL));
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+			char IP_string1[16] = {0};
+
+			Integer_to_IP(gnetif.ip_addr.addr, IP_string1);
+			HAL_UART_Transmit(&huart3, (unsigned char*)IP_string1, strlen(IP_string1), 200);
+
+
+		//	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "uxTaskGetStackHighWaterMark() = %lu\n\n", uxTaskGetStackHighWaterMark(NULL)); // the same information as in osThreadList but just for one task
+		//	HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 		}
 		osDelay(100);
 	}
+}
+
+/*
+ * @param integerIP - 4 * 8bit value in reversed order
+ * @param IP_string - pointer to created string (minimum size 16 bytes!)
+ */
+void Integer_to_IP(uint32_t integerIP, char *IP_string)
+{
+	uint8_t IP_part1 = (integerIP & 0xFF000000) >> 24;
+	uint8_t IP_part2 = (integerIP & 0x00FF0000) >> 16;
+	uint8_t IP_part3 = (integerIP & 0x0000FF00) >> 8;
+	uint8_t IP_part4 = (integerIP & 0x000000FF);
+
+	snprintf(IP_string, 16, "%u.%u.%u.%u", IP_part1, IP_part2, IP_part3, IP_part4);
 }
 
 
@@ -70,53 +81,7 @@ void GUI_UART_Task(void const *argument)
 
 //************************************
 
-// GUI_messages.c
 /*
-
-#include "GUI_messages.h"
-#include <string.h>
-#include "lwip.h"
-#include "main.h"
-#include "cmsis_os.h"
-
-char GUI_buffer[GUI_BUFFER_SIZE] = {0};
-
-extern UART_HandleTypeDef huart3;
-extern struct netif gnetif;
-
-void GUI_taskThread(void const * argument);
-
-void GUI_start(void)
-{
-	  osThreadDef(GUI_task, GUI_taskThread, osPriorityNormal, 0, 500);
-	  osThreadCreate(osThread(GUI_task), NULL);
-}
-
-void GUI_taskThread(void const * argument)
-{
-	while(1)
-	{
-		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
-		{
-			// print IP address
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
-
-			// print freeRTOS statistics
-			osThreadList((unsigned char*)GUI_buffer);
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
-
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\nxPortGetFreeHeapSize() = %u\n\n", xPortGetFreeHeapSize());
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
-
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "xPortGetMinimumEverFreeHeapSize() = %u\n\n", xPortGetMinimumEverFreeHeapSize());
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
-
-			osDelay(500);
-		}
-		osDelay(100);
-	}
-}
 
 void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 {
@@ -132,7 +97,7 @@ void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 
 
 // Call xPortGetFreeHeapSize(), create your tasks queues semaphores etc. then call xPortGetFreeHeapSize() again to find the difference. http://www.freertos.org/a00111.html
-// Actually, there’s also  xPortGetMinimumEverFreeHeapSize() but only when using heap4
+// There’s also  xPortGetMinimumEverFreeHeapSize() but only when using heap4
 */
 
 
