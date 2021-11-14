@@ -73,7 +73,7 @@ void Integer_to_IP(uint32_t integerIP, char *IP_string)
 	uint8_t IP_part3 = (integerIP & 0x0000FF00) >> 8;
 	uint8_t IP_part4 = (integerIP & 0x000000FF);
 
-	snprintf(IP_string, 16, "%u.%u.%u.%u", IP_part1, IP_part2, IP_part3, IP_part4);
+	snprintf(IP_string, 16, "%u.%u.%u.%u", IP_part4, IP_part3, IP_part2, IP_part1);
 }
 
 

@@ -28,6 +28,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "diagnostic_tools.h"
+#include "web_server.h"
 
 /* USER CODE END Includes */
 
@@ -130,6 +131,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN StartDefaultTask */
 
   DiagnosticToolsInit();
+  WebServerInit();
 
   /* Infinite loop */
   for(;;)
