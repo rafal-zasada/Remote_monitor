@@ -105,9 +105,16 @@ static void http_server_serve(struct netconn *conn) // new connection service
 					fs_close(&file);
 				}
 
-				else if((strncmp(buf, "GET /pic1.jpg", 13) == 0))
+				else if((strncmp(buf, "GET /pictures/TMD_logo.png", 26) == 0))
 				{
-					fs_open(&file, "/pic1.jpg");
+					fs_open(&file, "/pictures/TMD_logo.png");
+					netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+					fs_close(&file);
+				}
+
+				else if((strncmp(buf, "GET /pictures/CPI_logo.png", 26) == 0))
+				{
+					fs_open(&file, "/pictures/CPI_logo.png");
 					netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
 					fs_close(&file);
 				}
@@ -168,6 +175,10 @@ static void http_server_serve(struct netconn *conn) // new connection service
 int voltage1 = 233;
 int voltage2 = 223;
 int voltage3 = 255;
+int temperature1 = 40;
+int temperature2 = 30;
+int relay1 = 0;
+int relay2 = 1;
 
 void http_server_serve_dynamic_data(struct netconn *conn)
 {
@@ -175,8 +186,12 @@ void http_server_serve_dynamic_data(struct netconn *conn)
 
 	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%d\","
 											"\"voltage2\" : \"%d\","
-											"\"voltage3\" : \"%d\""
-											"}", ++voltage1, --voltage2, ++voltage3);
+											"\"voltage3\" : \"%d\","
+											"\"temperature1\" : \"%d\","
+											"\"temperature2\" : \"%d\","
+											"\"relay1\" : \"%d\","
+											"\"relay2\" : \"%d\""
+											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, ++relay1, ++relay2);
 
 	char header1_and_JSON_data[300] = 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"

@@ -65,6 +65,8 @@
 #define TCP_SND_QUEUELEN 9
 /*----- Value in opt.h for TCP_SNDQUEUELOWAT: LWIP_MAX(TCP_SND_QUEUELEN)/2, 5) -*/
 #define TCP_SNDQUEUELOWAT 5
+/*----- Default Value for LWIP_NETIF_HOSTNAME: 0 ---*/
+#define LWIP_NETIF_HOSTNAME 1
 /*----- Value in opt.h for LWIP_NETIF_LINK_CALLBACK: 0 -----*/
 #define LWIP_NETIF_LINK_CALLBACK 1
 /*----- Value in opt.h for TCPIP_THREAD_STACKSIZE: 0 -----*/

@@ -1,0 +1,33 @@
+How to assign hostname.
+
+From forum:
+The "netif::hostname" field can be used for DHCP negociation to automaticly register your device name in a DNS (associated to DHCP).
+If you want to be able to ping your lwip device without a such DHCP/DNS on your network, use the "contrib/apps/netbios sample".
+
+
+To make it work
+1. I have to replace in LWIP/Target/ethernetif.c:
+
+#if LWIP_NETIF_HOSTNAME
+  /* Initialize interface hostname */
+  netif->hostname = "lwip";
+#endif /* LWIP_NETIF_HOSTNAME */ 
+
+with:
+#if LWIP_NETIF_HOSTNAME
+
+#include "netbiosns.h" // put it outside of function (best practise)
+
+  /* Initialize interface hostname */
+  netif->hostname = "lwip";
+  netbiosns_init();
+  	netbiosns_set_name(netif->hostname);    (can I place it somwhere else and not modify ethernetif.c?)
+
+2. Set LWIP_NETIF_HOSTNAME to 1
+3. Copy netbiosns.c to LWIP/Target (or somwhere else?)
+
+
+
+
+
+
