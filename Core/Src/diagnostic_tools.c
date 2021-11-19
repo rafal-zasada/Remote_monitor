@@ -7,14 +7,11 @@
 
 #include "diagnostic_tools.h"
 #include "cmsis_os.h"
-#include "lwip.h"  // for struct netif data type
+#include "lwip.h"  // e.g. for struct netif data type
 
 extern struct netif gnetif;
 char GUI_buffer[GUI_bufferSize] = {0};
 osThreadId GUI_UART_TaskHandle;
-
-
-
 
 void Integer_to_IP(uint32_t integerIP, char *IP_string);
 void GUI_UART_Task(void const *argument);
@@ -62,19 +59,7 @@ void GUI_UART_Task(void const *argument)
 	}
 }
 
-/*
- * @param integerIP - 4 * 8bit value in reversed order
- * @param IP_string - pointer to created string (minimum size 16 bytes!)
- */
-void Integer_to_IP(uint32_t integerIP, char *IP_string)
-{
-	uint8_t IP_part1 = (integerIP & 0xFF000000) >> 24;
-	uint8_t IP_part2 = (integerIP & 0x00FF0000) >> 16;
-	uint8_t IP_part3 = (integerIP & 0x0000FF00) >> 8;
-	uint8_t IP_part4 = (integerIP & 0x000000FF);
 
-	snprintf(IP_string, 16, "%u.%u.%u.%u", IP_part4, IP_part3, IP_part2, IP_part1);
-}
 
 
 

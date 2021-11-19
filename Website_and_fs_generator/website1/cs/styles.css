@@ -1,9 +1,14 @@
+#body {
+    min-width: 1000px;
+}
+
 .logo_container {
     border: 2px rgb(43, 102, 168) solid;
     display: flex;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     justify-content: space-around;
     padding: 2px;
+    min-width: 400px;
 }
 
 .logo {
@@ -18,10 +23,10 @@
     color: rgb(52, 60, 131);
     /* text-align: center; */
     font-family: Arial, Helvetica, sans-serif;
-    /* white-space: nowrap; */
+    white-space: nowrap;
 }
 
-.read_table {
+.read_table, .signal_type {
     padding: 5px;
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
@@ -44,11 +49,16 @@
 .table_reading {
     text-align: center;
     width: 140px;
-    min-width: 100px;
+    min-width: 105px;
 }
 
 .table_options {
     text-align: center;
     width: 120px;
     min-width: 100px;
+}
+
+.signal_type {
+    padding: 0px;
+    width: 167px;
 }

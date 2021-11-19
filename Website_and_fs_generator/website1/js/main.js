@@ -1,11 +1,30 @@
 
+let getHost_IP = new XMLHttpRequest();
+
+getHost_IP.onload = function() {
+    let host_IP_string_received = getHost_IP.responseText;
+    let host_IP_stringDOM = document.getElementById('host_IP_string');
+    host_IP_stringDOM.innerText = host_IP_string_received;
+
+ //   console.log("Received text:" + host_IP_string_received);
+ //   console.log(this.getResponseHeader("Content-Type"));
+ //   console.log(this.getAllResponseHeaders());
+}
+
+getHost_IP.open('GET', 'http://monitor1/get_host_IP');
+getHost_IP.send();
+
+
 let getVoltages = new XMLHttpRequest(); // to receive data
 
 getVoltages.onload = function () {
     let serverDataParsed = JSON.parse(getVoltages.responseText);
-    let serverData2 = getVoltages.responseText;
+
+    // let serverData2 = getVoltages.responseText;
 
     console.log(serverDataParsed);
+    console.log(this.getAllResponseHeaders());
+    console.log(this.getResponseHeader("Content-Type"));
 
     let voltage1_ReadValue = serverDataParsed.voltage1;
     let voltage2_ReadValue = serverDataParsed.voltage2;
@@ -48,26 +67,36 @@ function readVoltages() {
 
     console.log(count++);
 
-    if (count > 20) {
-        clearInterval(intervalID);
+    if (count > 3) {
+        clearInterval(intervalID); 
     }
 }
 
 let postInstruction = new XMLHttpRequest(); // to send data
 
 postInstruction.onload = function () {
-    console.log("onload called after AJAX POST request");
+ //   console.log("onload called after AJAX POST request");
 }
 
-postInstruction.open('POST', 'http://monitor1/data1');
-//postInstruction.setRequestHeader("Access-Control-Allow-Origin:*"); // not needed
-postInstruction.send("Rafal message Bloody hell sgdfgdfgsdgdfsgdsfgdsgfgdfg");
+// postInstruction.open('POST', 'http://monitor1/data1');
+// postInstruction.setRequestHeader("Access-Control-Allow-Origin:*"); // not needed
+// postInstruction.send("Rafal message Bloody hell 123456");
 
-console.log(window.location.host); // log address of server (HTTP)
+//console.log(window.location.host); // log address of server (HTTP)
 
-
-
-function SignalTypeChange(value)
+function SettingsChangeCH1(value)
 {
-    alert(value);
+    let postInstruction222 = new XMLHttpRequest(); // to send data
+    postInstruction222.open('POST', 'http://monitor1/data1');
+    postInstruction222.send("Sending POST from SignalTypeChangeCH1 function");
+}
+
+function SettingsChangeCH2(value)
+{
+    alert(value + 99);
+}
+
+function SettingsChangeCH3(value)
+{
+    alert(value + 999);
 }

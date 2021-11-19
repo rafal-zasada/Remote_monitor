@@ -10,6 +10,7 @@
 #include "lwip/apps/fs.h"
 #include "diagnostic_tools.h"
 #include "string.h"
+#include "lwip.h"
 
 
 //#include "netbiosns.h"
@@ -80,8 +81,8 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 			// debug start
 			// print whole input buffer
-//			snprintf(GUI_buffer, sizeof(GUI_buffer), "\n\n%s \n\n ", buf);		// buf is not \0 terminated hence need to use buflen for UART transmit !
-//			HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , buflen, 200); //
+			snprintf(GUI_buffer, sizeof(GUI_buffer), "\n\n%s \n\n ", buf);		// buf is not \0 terminated hence need to use buflen for UART transmit !
+			HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , buflen, 200); //
 
 			// print sise of the input buffer
 //			snprintf(GUI_buffer, sizeof(GUI_buffer), "\n buflen =  %d\n\n ", buflen);
@@ -126,6 +127,26 @@ static void http_server_serve(struct netconn *conn) // new connection service
 					fs_close(&file);
 				}
 
+				else if(strncmp((char const *)buf,"GET /get_host_IP", 16) == 0)
+				{
+					char host_IP_string[17] = {0}; // regardless of string length it will be terminated
+					extern struct netif gnetif;
+					char response[100] = "HTTP/1.1 200 OK\r\n"
+										 "Content-Type: text/html\r\n"
+										 "Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
+										 //	"Content-Length : 20\r\n"				// not necessary, length will be established in other way
+										 //	"Connection: keep-alive \r\n";			// purpose?
+										 "\r\n";
+
+					Integer_to_IP(gnetif.ip_addr.addr, host_IP_string);
+					strcat(response, host_IP_string); // both strings have to be NULL terminated
+					netconn_write(conn, response, strlen(response), NETCONN_NOCOPY);
+
+					HAL_UART_Transmit(&huart3, "\n STM32 response \n", 18, 200);
+					HAL_UART_Transmit(&huart3, (unsigned char*)response, strlen(response) + 1, 200);
+
+				}
+
 				else if(strncmp((char const *)buf,"GET /data1", 10) == 0)
 				{
 					http_server_serve_dynamic_data(conn);
@@ -147,7 +168,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 					{
 	//					snprintf(GUI_buffer, sizeof(GUI_buffer), "\n\n POST request received \n\n ");		// buf is not \0 terminated hence need to use buflen for UART transmit !
 	//					HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) , 200); //
-
 
 						receivedPOST += 4; // skip 2 new line characters and point to POST body
 
@@ -207,8 +227,22 @@ void http_server_serve_dynamic_data(struct netconn *conn)
 
 //	snprintf(GUI_buffer, sizeof(GUI_buffer), "\n------ Start of server response to GET data1 ------- \n ");
 //	HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) + 1, 200);
-//	HAL_UART_Transmit(&huart3, (unsigned char*)&header1_and_JSON_data , strlen(header1_and_JSON_data) + 1, 300);
+	HAL_UART_Transmit(&huart3, (unsigned char*)&header1_and_JSON_data , strlen(header1_and_JSON_data) + 1, 300);
 
 
+}
+
+/*
+ * @param integerIP - 4 * 8bit value in reversed order
+ * @param IP_string - pointer to created string (minimum size 16 bytes!)
+ */
+void Integer_to_IP(uint32_t integerIP, char *IP_string)
+{
+	uint8_t IP_part1 = (integerIP & 0xFF000000) >> 24;
+	uint8_t IP_part2 = (integerIP & 0x00FF0000) >> 16;
+	uint8_t IP_part3 = (integerIP & 0x0000FF00) >> 8;
+	uint8_t IP_part4 = (integerIP & 0x000000FF);
+
+	snprintf(IP_string, 16, "%u.%u.%u.%u", IP_part4, IP_part3, IP_part2, IP_part1);
 }
 

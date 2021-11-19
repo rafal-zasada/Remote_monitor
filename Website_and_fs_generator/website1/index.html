@@ -1,34 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document i.e. my document</title>
-    <link rel="stylesheet" href="cs/styles.css" type="text/css">
-</head>
-
-<body>
-    <header>
-        <h1>My website 111</h1>
-        <button id="btn1">Fetch info for 3 New animals</button>
-    </header>
-
-    <div id="animal-info">cccc</div>
-
-    <img src="pic1.jpg" alt="Girl in a jacket">
-
-    <div id="channel_1_voltage">awaiting data</div>
-    <div id="channel_2_voltage">awaiting data</div>
-    <div id="channel_3_voltage">awaiting data</div>
-
-    <script src="js/main.js"></script>
-</body>
-
-</html> -->
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,83 +18,89 @@
     </div>
 
     <br>
-    <H1 class="title">Remote Channels</H1>
+    <H1 class="title">Remote Channels</H1>    <!-- header -->
+    <div class="host_IP_string" id="host_IP_string">Host IP for mobile access - reading...</div>
 
     <table class="read_table">
         <tr>
           <th style="text-align: center;">Channel</th>
           <th style="text-align: center;">Reading</th>
-          <th>Options</th>
-          <!-- <th>Trigger level</th> -->
+          <th>Settings</th>
         </tr>
+
         <tr>
           <td class="table_channel">CH 1</td>
-          <td class="table_reading" id="CH1_voltage">awaiting data</td>
-          <td class="table_options">DC</td>
-          <!-- <td>0.5V</td> -->
+          <td class="table_reading" id="CH1_voltage">awaiting</td>
+          <td class="table_options">        
+            <select class="signal_type" onchange="SettingsChangeCH1(this.value);">
+              <option value='1'>DC</option>
+              <option value='2'>Trig. + 2us</option>
+              <option value='2'>Trig. + 20us</option>
+            </select>            
+          </td>
         </tr>
+
         <tr>
           <td class="table_channel">CH 2</td>
-          <td class="table_reading" id="CH2_voltage">awaiting data</td>
-          <td class="table_options">Pulse</td>
-          <!-- <td>$1200</td> -->
+          <td class="table_reading" id="CH2_voltage">awaiting</td>
+          <td class="table_options">
+            <select class="signal_type" onchange="SettingsChangeCH2(this.value);">
+                <option value='1'>DC</option>
+                <option value='2'>Pulse @2us</option>
+                <option value='2'>Pulse @19us</option>
+              </select>               
+          </td>
         </tr>
+
         <tr>
           <td class="table_channel">CH 3</td>
-          <td class="table_reading" id="CH3_voltage">awaiting data</td>
-          <td class="table_options">DC</td>
-          <!-- <td>$1100</td> -->
+          <td class="table_reading" id="CH3_voltage">awaiting</td>
+          <td class="table_options">              
+            <select class="signal_type" onchange="SettingsChangeCH3(this.value);">
+                <option value='1'>DC</option>
+                <option value='2'>Pulse @2us</option>
+                <option value='2'>Pulse @19us</option>
+            </select> 
+          </td>
         </tr>
+
         <tr>
           <td class="table_channel">TC 1</td> 
-          <td class="table_reading" id="TC1_temp">awaiting data °C</td>
-          <td class="table_options">---</td>
-          <!-- <td>$1300</td> -->
+          <td class="table_reading" id="TC1_temp">awaiting</td>
+          <td class="table_options"></td>
         </tr>
+
         <tr>
           <td class="table_channel">TC 2</td>
-          <td class="table_reading" id="TC2_temp">awaiting data °C</td>
-          <td class="table_options">---</td>
-          <!-- <td>$1300</td> -->
+          <td class="table_reading" id="TC2_temp">awaiting</td>
+          <td class="table_options"></td>
         </tr>
+
         <tr>
           <td class="table_channel">Relay 1</td>
-          <td class="table_reading" id="Relay1">awaiting data</td>
-          <td class="table_options">---</td>
-          <!-- <td>$1300</td> -->
+          <td class="table_reading" id="Relay1">awaiting</td>
+          <td class="table_options">
+            <select class="signal_type" onchange="SettingsChangeRelay1(this.value);">
+                <option value='1'>Close</option>
+                <option value='2'>Open</option>
+            </select> 
+
+          </td>
         </tr>
+
         <tr>
           <td class="table_channel">Relay 2</td>
-          <td class="table_reading" id="Relay2">awaiting data</td>
-          <td class="table_options">---</td>
-          <!-- <td>$1300</td> -->
+          <td class="table_reading" id="Relay2">awaiting</td>
+          <td class="table_options">
+            <select class="signal_type" onchange="SettingsChangeRelay2(this.value);">
+                <option value='1'>Close</option>
+                <option value='2'>Open</option>
+            </select> 
+          </td>
         </tr>
       </table>
-
-      <!-- <form method="post">
-        <select name='PreviousReceiver' onchange='if(this.value != 0) { this.form.submit(); }'>
-             <option value='0'>Contact List</option>
-             <option value='1'>blah</option>
-             <option value='2'>blah2</option>
-             <option value='3'>blah3</option>
-        </select>
-    </form> -->
-
-<!-- From forum to be tested --> 
-    <!-- <script type="text/javascript">
-        function jsFunction(value)
-        {
-            alert(value);
-        }
-        </script> -->
-        
-        <!-- <select id ="ddl" name="ddl" onmousedown="this.value='';" onchange="jsFunction(this.value);"> -->
-        <select id ="ddl" name="ddl" onchange="SignalTypeChange(this.value);">
-          <option value='1'>DC</option>
-          <option value='2'>Pulse</option>
-        </select>
-
 
     <script src="js/main.js"></script>
 </body>
 </html>
+
