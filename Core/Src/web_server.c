@@ -12,15 +12,10 @@
 #include "string.h"
 #include "lwip.h"
 
-
-//#include "netbiosns.h"
-
-
 extern UART_HandleTypeDef huart3;
-
 static void WebServerThread(void *arg);
 static void http_server_serve(struct netconn *conn);
-static void http_server_serve_dynamic_data(struct netconn *conn);
+static void send_monitor_data(struct netconn *conn);
 
 // !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!!
 
@@ -76,19 +71,15 @@ static void http_server_serve(struct netconn *conn) // new connection service
 	{
 		if(netconn_err(conn) == ERR_OK)
 		{
-			 netbuf_data(inbuf, (void**)&buf, &buflen); // Get the data pointer and length of the data inside a netbuf.
+			netbuf_data(inbuf, (void**)&buf, &buflen);  // Get the data pointer and length of the data inside a netbuf.
 
 
 			// debug start
 			// print whole input buffer
-			snprintf(GUI_buffer, sizeof(GUI_buffer), "\n\n%s \n\n ", buf);		// buf is not \0 terminated hence need to use buflen for UART transmit !
-			HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , buflen, 200); //
 
-			// print sise of the input buffer
-//			snprintf(GUI_buffer, sizeof(GUI_buffer), "\n buflen =  %d\n\n ", buflen);
-//			HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) + 1, 200);
+			HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
+//			snprintf(GUI_buffer, buflen + 7, "111%s999", buf);		// will not work properly because buf is not NULL terminated - can't copy properly to %s
 			// debug end
-
 
 			if((buflen >= 5) && (strncmp(buf, "GET /", 5) == 0)) // Is this an HTTP GET command? (only check the first 5 chars, since there are other formats for GET, and we're keeping it very simple. Rest of the header is ignored )
 			{
@@ -129,27 +120,30 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 				else if(strncmp((char const *)buf,"GET /get_host_IP", 16) == 0)
 				{
-					char host_IP_string[17] = {0}; // regardless of string length it will be terminated
+					osDelay(300); // to test javascript asynchronicity and other things ***********************************************
+
+					char host_IP_string[17] = {0};
 					extern struct netif gnetif;
 					char response[100] = "HTTP/1.1 200 OK\r\n"
 										 "Content-Type: text/html\r\n"
-										 "Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
-										 //	"Content-Length : 20\r\n"				// not necessary, length will be established in other way
-										 //	"Connection: keep-alive \r\n";			// purpose?
-										 "\r\n";
+										 "Access-Control-Allow-Origin:* \r\n"
+										 //	"Content-Length : 20\r\n"
+										 //	"Connection: keep-alive \r\n";
+										 "\r\n"; // second\r\n mandatory to mark end of header!
 
 					Integer_to_IP(gnetif.ip_addr.addr, host_IP_string);
 					strcat(response, host_IP_string); // both strings have to be NULL terminated
 					netconn_write(conn, response, strlen(response), NETCONN_NOCOPY);
 
-					HAL_UART_Transmit(&huart3, "\n STM32 response \n", 18, 200);
-					HAL_UART_Transmit(&huart3, (unsigned char*)response, strlen(response) + 1, 200);
+				//	HAL_UART_Transmit(&huart3, "\n STM32 response \n", 18, 200);
+				//	HAL_UART_Transmit(&huart3, (unsigned char*)response, strlen(response) + 1, 200);
+				//	HAL_UART_Transmit(&huart3, "\n\n", 2, 200);
 
 				}
 
 				else if(strncmp((char const *)buf,"GET /data1", 10) == 0)
 				{
-					http_server_serve_dynamic_data(conn);
+					send_monitor_data(conn);
 				}
 
 				else
@@ -179,7 +173,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 						char *responseToPOST = 	"HTTP/1.1 200 OK\r\n"
 											//	"Content-Type: text/html\r\n"			// do I need this in this response?
 												"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
-												"\r\n";
+												"\r\n";									// second\r\n mandatory to mark end of header!
 
 						netconn_write(conn, (signed char*)responseToPOST, strlen(responseToPOST), NETCONN_NOCOPY);
 					}
@@ -200,9 +194,9 @@ int temperature2 = 30;
 int relay1 = 0;
 int relay2 = 1;
 
-void http_server_serve_dynamic_data(struct netconn *conn)
+void send_monitor_data(struct netconn *conn)
 {
-	char JSON_data[200] = {0};
+	char JSON_data[250] = {0};
 
 	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%d\","
 											"\"voltage2\" : \"%d\","
@@ -213,27 +207,19 @@ void http_server_serve_dynamic_data(struct netconn *conn)
 											"\"relay2\" : \"%d\""
 											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, ++relay1, ++relay2);
 
-	char header1_and_JSON_data[300] = 	"HTTP/1.1 200 OK\r\n"
+	char response[300] = 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"
 										"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
 									//	"Content-Length : 20\r\n"				// not necessary, length will be established in other way
 									//	"Connection: keep-alive \r\n";			// purpose?
 										"\r\n";  								// second\r\n mandatory to mark end of header!
 
-	strcat(header1_and_JSON_data, JSON_data);
-	netconn_write(conn, (const unsigned char*)(header1_and_JSON_data), strlen(header1_and_JSON_data), NETCONN_NOCOPY);
-
-	//debug
-
-//	snprintf(GUI_buffer, sizeof(GUI_buffer), "\n------ Start of server response to GET data1 ------- \n ");
-//	HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) + 1, 200);
-	HAL_UART_Transmit(&huart3, (unsigned char*)&header1_and_JSON_data , strlen(header1_and_JSON_data) + 1, 300);
-
-
+	strcat(response, JSON_data);
+	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);
 }
 
 /*
- * @param integerIP - 4 * 8bit value in reversed order
+ * @param integerIP - 4 * 8bit value in reversed order read from LwIP stack
  * @param IP_string - pointer to created string (minimum size 16 bytes!)
  */
 void Integer_to_IP(uint32_t integerIP, char *IP_string)

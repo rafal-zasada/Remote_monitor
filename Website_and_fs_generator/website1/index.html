@@ -13,13 +13,13 @@
             <img src="pictures/TMD_logo.png" alt="TMD-logo">
         </div>
         <div class="logo">
-            <img src="pictures/CPI_logo.png" alt="CPI-logo">
+            <img src="pictures/CPI_logo.png" alt="CPI-logo"> 
         </div>
     </div>
 
     <br>
-    <H1 class="title">Remote Channels</H1>    <!-- header -->
     <div class="host_IP_string" id="host_IP_string">Host IP for mobile access - reading...</div>
+    <H1 class="title">Remote Channels</H1>    <!-- header -->
 
     <table class="read_table">
         <tr>
@@ -33,9 +33,16 @@
           <td class="table_reading" id="CH1_voltage">awaiting</td>
           <td class="table_options">        
             <select class="signal_type" onchange="SettingsChangeCH1(this.value);">
-              <option value='1'>DC</option>
-              <option value='2'>Trig. + 2us</option>
-              <option value='2'>Trig. + 20us</option>
+              <option value='0'>free run</option>
+              <option value='2'>trig. + 2us</option>
+              <option value='5'>trig. + 5us</option>
+              <option value='9'>trig. + 9us</option>
+              <option value='14'>trig. + 14us</option>
+              <option value='19'>trig. + 19us</option>
+              <option value='24'>trig. + 24us</option>
+              <option value='29'>trig. + 29us</option>
+              <option value='39'>trig. + 39us</option>
+              <option value='49'>trig. + 49us</option>
             </select>            
           </td>
         </tr>
@@ -45,9 +52,16 @@
           <td class="table_reading" id="CH2_voltage">awaiting</td>
           <td class="table_options">
             <select class="signal_type" onchange="SettingsChangeCH2(this.value);">
-                <option value='1'>DC</option>
-                <option value='2'>Pulse @2us</option>
-                <option value='2'>Pulse @19us</option>
+                <option value='0'>free run</option>
+                <option value='2'>trig. + 2us</option>
+                <option value='5'>trig. + 5us</option>
+                <option value='9'>trig. + 9us</option>
+                <option value='14'>trig. + 14us</option>
+                <option value='19'>trig. + 19us</option>
+                <option value='24'>trig. + 24us</option>
+                <option value='29'>trig. + 29us</option>
+                <option value='39'>trig. + 39us</option>
+                <option value='49'>trig. + 49us</option>
               </select>               
           </td>
         </tr>
@@ -57,9 +71,16 @@
           <td class="table_reading" id="CH3_voltage">awaiting</td>
           <td class="table_options">              
             <select class="signal_type" onchange="SettingsChangeCH3(this.value);">
-                <option value='1'>DC</option>
-                <option value='2'>Pulse @2us</option>
-                <option value='2'>Pulse @19us</option>
+                <option value='0'>free run</option>
+                <option value='2'>trig. + 2us</option>
+                <option value='5'>trig. + 5us</option>
+                <option value='9'>trig. + 9us</option>
+                <option value='14'>trig. + 14us</option>
+                <option value='19'>trig. + 19us</option>
+                <option value='24'>trig. + 24us</option>
+                <option value='29'>trig. + 29us</option>
+                <option value='39'>trig. + 39us</option>
+                <option value='49'>trig. + 49us</option>
             </select> 
           </td>
         </tr>

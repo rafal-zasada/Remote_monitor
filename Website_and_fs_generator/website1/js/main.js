@@ -1,30 +1,59 @@
 
 let getHost_IP = new XMLHttpRequest();
+let receivedHost_IP_string ; // string
+let host_IP_stringKnown = false;
+let getHost_IP_LoopCount = 0;
+let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500);
 
-getHost_IP.onload = function() {
-    let host_IP_string_received = getHost_IP.responseText;
-    let host_IP_stringDOM = document.getElementById('host_IP_string');
-    host_IP_stringDOM.innerText = host_IP_string_received;
 
- //   console.log("Received text:" + host_IP_string_received);
- //   console.log(this.getResponseHeader("Content-Type"));
- //   console.log(this.getAllResponseHeaders());
+function getHost_IP_Loop() {
+
+    getHost_IP.open('GET', 'http://monitor1/get_host_IP');
+    getHost_IP.send();
+    getHost_IP_LoopCount++;
+
+    console.log("Attempts: " + getHost_IP_LoopCount);
+    console.log("IP string received inside: " + receivedHost_IP_string);
+
+    if(receivedHost_IP_string != undefined) {
+        clearInterval(getHost_IP_LoopInterval);
+        host_IP_stringKnown = true;
+    }
+
+    if(getHost_IP_LoopCount > 10 && receivedHost_IP_string == undefined) {
+        clearInterval(getHost_IP_LoopInterval);
+        alert("Communication error, refresh the page");
+    };
 }
 
-getHost_IP.open('GET', 'http://monitor1/get_host_IP');
-getHost_IP.send();
+getHost_IP.onload = function() {
+    let host_IP_stringDOM = document.getElementById('host_IP_string');
 
+    receivedHost_IP_string = getHost_IP.responseText;
+    host_IP_stringDOM.innerText = 'To access this website from mobile use: http://' + receivedHost_IP_string;
+}
 
 let getVoltages = new XMLHttpRequest(); // to receive data
+let getVoltagesLoopCount = 1;
+let DataReadingInterval = setInterval(getVoltagesLoop, 300);
+
+function getVoltagesLoop() {
+
+    if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
+
+    getVoltages.open('GET', 'http://' + receivedHost_IP_string + '/data1');
+    getVoltages.send();
+
+    console.log(getVoltagesLoopCount++);
+
+    if (getVoltagesLoopCount > 7) {
+        clearInterval(DataReadingInterval); 
+    }
+}
 
 getVoltages.onload = function () {
     let serverDataParsed = JSON.parse(getVoltages.responseText);
-
-    // let serverData2 = getVoltages.responseText;
-
     console.log(serverDataParsed);
-    console.log(this.getAllResponseHeaders());
-    console.log(this.getResponseHeader("Content-Type"));
 
     let voltage1_ReadValue = serverDataParsed.voltage1;
     let voltage2_ReadValue = serverDataParsed.voltage2;
@@ -33,7 +62,6 @@ getVoltages.onload = function () {
     let temperature2_ReadValue = serverDataParsed.temperature2;
     let relay1_ReadValue = serverDataParsed.relay1;
     let relay2_ReadValue = serverDataParsed.relay2;
-
 
     let voltage1DOM = document.getElementById('CH1_voltage');
     voltage1DOM.innerText = voltage1_ReadValue + " V";
@@ -57,46 +85,29 @@ getVoltages.onload = function () {
     relay2DOM.innerText = relay2_ReadValue;
 }
 
-let count = 1;
-let intervalID = setInterval(readVoltages, 100);
 
-function readVoltages() {
- //   getVoltages.open('GET', 'http://192.168.0.29/data1');
-    getVoltages.open('GET', 'http://monitor1/data1');
-    getVoltages.send();
-
-    console.log(count++);
-
-    if (count > 3) {
-        clearInterval(intervalID); 
-    }
-}
-
-let postInstruction = new XMLHttpRequest(); // to send data
-
-postInstruction.onload = function () {
- //   console.log("onload called after AJAX POST request");
-}
-
-// postInstruction.open('POST', 'http://monitor1/data1');
-// postInstruction.setRequestHeader("Access-Control-Allow-Origin:*"); // not needed
-// postInstruction.send("Rafal message Bloody hell 123456");
-
-//console.log(window.location.host); // log address of server (HTTP)
 
 function SettingsChangeCH1(value)
-{
-    let postInstruction222 = new XMLHttpRequest(); // to send data
-    postInstruction222.open('POST', 'http://monitor1/data1');
-    postInstruction222.send("Sending POST from SignalTypeChangeCH1 function");
+{    //should I block here other asynchronous GET or POST requests to make sure this one is handled?
+
+    let postInstruction = new XMLHttpRequest();
+    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    postInstruction.send("CH1 " + value);
+    console.log(value);
 }
 
 function SettingsChangeCH2(value)
 {
-    alert(value + 99);
+    let postInstruction = new XMLHttpRequest();
+    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    postInstruction.send("CH2 " + value);
+    console.log(value);
 }
 
 function SettingsChangeCH3(value)
 {
-    alert(value + 999);
+    let postInstruction = new XMLHttpRequest();
+    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    postInstruction.send("CH3 " + value);
+    console.log(value);
 }

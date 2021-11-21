@@ -19,6 +19,13 @@
 
 }
 
+.host_IP_string {
+    color: rgb(52, 60, 131);
+    /* text-align: center; */
+    font-family: Arial, Helvetica, sans-serif;
+    white-space: nowrap;
+}
+
 .title {
     color: rgb(52, 60, 131);
     /* text-align: center; */
