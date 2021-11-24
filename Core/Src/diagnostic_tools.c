@@ -28,8 +28,8 @@ void GUI_UART_Task(void const *argument)
 	{
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Test value \n");
-			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 50);
+//			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Test value \n");
+//			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 50);
 
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
 			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
@@ -40,7 +40,7 @@ void GUI_UART_Task(void const *argument)
 			osThreadList((unsigned char*)GUI_buffer);
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer - 1, strlen(GUI_buffer) + 1, 200);
 
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\nxPortGetFreeHeapSize() = %u\n\n", xPortGetFreeHeapSize());
+			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\nxPortGetFreeHeapSize() = %u\n", xPortGetFreeHeapSize());
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "xPortGetMinimumEverFreeHeapSize() = %u\n\n", xPortGetMinimumEverFreeHeapSize());
@@ -50,6 +50,7 @@ void GUI_UART_Task(void const *argument)
 
 			Integer_to_IP(gnetif.ip_addr.addr, IP_string1);
 			HAL_UART_Transmit(&huart3, (unsigned char*)IP_string1, strlen(IP_string1), 200);
+			HAL_UART_Transmit(&huart3, (unsigned char*)"\n\n", 3, 200);
 
 
 		//	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "uxTaskGetStackHighWaterMark() = %lu\n\n", uxTaskGetStackHighWaterMark(NULL)); // the same information as in osThreadList but just for one task
@@ -66,12 +67,13 @@ void GUI_UART_Task(void const *argument)
 
 //************************************
 
-/*
+
 
 void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 {
 	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Overflow detected in: %s\n", pcTaskName);
 	HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+	while(1);
 	osDelay(1000);
 }
 
@@ -83,6 +85,6 @@ void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 
 // Call xPortGetFreeHeapSize(), create your tasks queues semaphores etc. then call xPortGetFreeHeapSize() again to find the difference. http://www.freertos.org/a00111.html
 // There’s also  xPortGetMinimumEverFreeHeapSize() but only when using heap4
-*/
+
 
 

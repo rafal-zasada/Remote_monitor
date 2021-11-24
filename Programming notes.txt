@@ -16,7 +16,7 @@ To make it work
 with:
 #if LWIP_NETIF_HOSTNAME
 
-#include "netbiosns.h" // put it outside of function (best practise)
+#include "netbiosns.h" // 
 
   /* Initialize interface hostname */
   netif->hostname = "lwip";

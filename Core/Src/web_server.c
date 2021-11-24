@@ -16,12 +16,15 @@ extern UART_HandleTypeDef huart3;
 static void WebServerThread(void *arg);
 static void http_server_serve(struct netconn *conn);
 static void send_monitor_data(struct netconn *conn);
+static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen);
+static void send_all_settings(struct netconn *conn);
 
 // !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!!
 
 void WebServerInit(void)
 {
-	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
+	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // LwIP specific function
+//	sys_thread_new("myHTTP", WebServerThread, NULL, 1500, osPriorityNormal);
 }
 
 static void WebServerThread(void *arg)
@@ -141,6 +144,11 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 				}
 
+				else if(strncmp((char const *)buf,"GET /get_all_settings", 21) == 0)
+				{
+					send_all_settings(conn);
+				}
+
 				else if(strncmp((char const *)buf,"GET /data1", 10) == 0)
 				{
 					send_monitor_data(conn);
@@ -156,27 +164,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 			if((buflen >= 6) && (strncmp(buf, "POST /", 6) == 0)) // check if it is HTTP POST request
 				{
-					char *receivedPOST = strstr(buf, "\r\n\r\n");
-
-					if(receivedPOST != NULL)
-					{
-	//					snprintf(GUI_buffer, sizeof(GUI_buffer), "\n\n POST request received \n\n ");		// buf is not \0 terminated hence need to use buflen for UART transmit !
-	//					HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) , 200); //
-
-						receivedPOST += 4; // skip 2 new line characters and point to POST body
-
-						u16_t POST_length = buflen - (receivedPOST - buf); // subtract header length from the length of whole message
-
-	//					HAL_UART_Transmit(&huart3, (unsigned char*)receivedPOST, POST_length, 200);
-
-					// below
-						char *responseToPOST = 	"HTTP/1.1 200 OK\r\n"
-											//	"Content-Type: text/html\r\n"			// do I need this in this response?
-												"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
-												"\r\n";									// second\r\n mandatory to mark end of header!
-
-						netconn_write(conn, (signed char*)responseToPOST, strlen(responseToPOST), NETCONN_NOCOPY);
-					}
+					respond_to_POST(conn, buf, buflen);
 				}
 		}
 	}
@@ -184,6 +172,76 @@ static void http_server_serve(struct netconn *conn) // new connection service
 	netconn_close(conn); // Close the connection (server closes in HTTP)
 	netbuf_delete(inbuf); // Delete the buffer (netconn_recv gives us ownership, so we have to make sure to deallocate the buffer)
 }
+
+
+int CH1_setting = 11;
+int CH2_setting = 12;
+int CH3_setting = 13;
+int Relay1_setting = 14;
+int Relay2_setting = 15;
+
+static void send_all_settings(struct netconn *conn)
+{
+	char Message[300];
+
+//	osDelay(20000);
+	HAL_UART_Transmit(&huart3, (char unsigned*)"\n\nSend all settings triggered on server\n\n", 19, 200);
+
+	snprintf(Message, sizeof(Message), 	"HTTP/1.1 200 OK\r\n"
+										"Content-Type: text/html\r\n"
+										"Access-Control-Allow-Origin:* \r\n"
+										"\r\n"
+										"{\"Ch1_setting\" : \"%d\","
+										"\"Ch2_setting\" : \"%d\","
+										"\"Ch3_setting\" : \"%d\","
+										"\"Relay1_setting\" : \"%d\","
+										"\"Relay2_setting\" : \"%d\""
+										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting);
+
+//	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
+
+}
+
+static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
+{
+	char *messagePointer = strstr(buf, "\r\n\r\n"); // find end of the header
+
+	if(messagePointer != NULL)
+	{
+		messagePointer += 4; // skip 2 new line characters and point to POST body
+
+		u32_t receivedMessageLength = buflen - (messagePointer - buf); 		// subtract header length from the length of whole message
+		#define bufferSize 30
+		char receivedMessage[bufferSize];
+
+		if(!(receivedMessageLength >= bufferSize - 1)) 						// avoid buffer overflow
+		{
+			strncpy(receivedMessage, messagePointer, receivedMessageLength);
+			receivedMessage[receivedMessageLength] = 0;							// terminate string
+
+			HAL_UART_Transmit(&huart3, (uint8_t*)receivedMessage, strlen(receivedMessage), 200);
+
+			char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
+								//	"Content-Type: text/html\r\n"			// do I need this in this response?
+									"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
+									"\r\n";									// second\r\n mandatory to mark end of header!
+
+			// Data format for communication with server (settings only)
+			// First 3 characters - parameter
+			// Forth character - space
+			// Fifth, sixth, seventh character - value
+
+
+			strcat(serverResponse, receivedMessage);
+
+			netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY);
+		}
+	}
+}
+
+
+
+
 
 
 int voltage1 = 233;

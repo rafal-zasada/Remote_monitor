@@ -1,6 +1,6 @@
-#body {
-    min-width: 1000px;
-}
+/* body {
+    min-width: 425px;
+} */
 
 .logo_container {
     border: 2px rgb(43, 102, 168) solid;
@@ -16,7 +16,6 @@
     text-align: center;
     padding: 5px;
     height: auto;
-
 }
 
 .host_IP_string {
@@ -33,13 +32,38 @@
     white-space: nowrap;
 }
 
-.read_table, .signal_type {
+.read_table {
     padding: 5px;
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
-    font-weight: bold;
+    /* font-weight: bold; */
     font-size: 23px;
     white-space: nowrap;
+}
+
+
+
+.channel_setting {
+    border: 2px solid rgb(168, 171, 192);
+    padding: 5px;
+    color: rgb(52, 60, 131);
+    font-family: Arial, Helvetica, sans-serif;
+    /* font-weight: bold; */
+    font-size: 23px;
+    white-space: nowrap;
+
+}
+
+.read_table {
+    border-collapse: collapse;
+}
+
+td, th {
+    border: 1px solid rgb(163, 163, 163);
+    padding: 8px;
+    /* border: -40px; */
+    /* margin: 0px; */
+    
 }
 
 .read_table tr {
@@ -59,13 +83,15 @@
     min-width: 105px;
 }
 
-.table_options {
+.table_settings {
     text-align: center;
-    width: 120px;
-    min-width: 100px;
+    /* width: 120px;
+    min-width: 120px; */
 }
 
-.signal_type {
+.channel_setting {
     padding: 0px;
-    width: 167px;
+    width: 227px;
 }
+
+

@@ -1,26 +1,50 @@
 
-let getHost_IP = new XMLHttpRequest();
-let receivedHost_IP_string ; // string
-let host_IP_stringKnown = false;
+let Setting_CH1;
+let Setting_CH2;
+let Setting_CH3;
+let Relay1;
+let Relay2;
+
+// Data format for communication with server (settings only)
+// First 3 characters - parameter
+// Forth character - space
+// Fifth, sixth, seventh character - value
+
+let test1 = document.getElementById('CH1_setting');
+// console.log(test1.value);
+test1.value = -5;
+
+
+
+// Get server IP block - begining ************************************************************************
 let getHost_IP_LoopCount = 0;
 let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500);
-
+let getHost_IP = new XMLHttpRequest();
+let receivedHost_IP_string = ""; // string
+let host_IP_stringKnown = false;
 
 function getHost_IP_Loop() {
+    console.log("getHostIP attempt: " +getHost_IP_LoopCount);
+
+    if(document.location.hostname != "monitor1" && document.location.hostname != "127.0.0.1") {  // If webside has been accessed not by "monitor1" name (presumably by IP from mobile)
+                                                                                                 // then get IP from hostname (which will equal to IP) and return
+        receivedHost_IP_string = document.location.hostname;
+        clearInterval(getHost_IP_LoopInterval);
+        host_IP_stringKnown = true;
+        console.log("Test");
+        return; 
+    }
 
     getHost_IP.open('GET', 'http://monitor1/get_host_IP');
     getHost_IP.send();
     getHost_IP_LoopCount++;
 
-    console.log("Attempts: " + getHost_IP_LoopCount);
-    console.log("IP string received inside: " + receivedHost_IP_string);
-
-    if(receivedHost_IP_string != undefined) {
+    if(receivedHost_IP_string != "") {
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
     }
 
-    if(getHost_IP_LoopCount > 10 && receivedHost_IP_string == undefined) {
+    if(getHost_IP_LoopCount > 6 && receivedHost_IP_string == "") {
         clearInterval(getHost_IP_LoopInterval);
         alert("Communication error, refresh the page");
     };
@@ -31,8 +55,43 @@ getHost_IP.onload = function() {
 
     receivedHost_IP_string = getHost_IP.responseText;
     host_IP_stringDOM.innerText = 'To access this website from mobile use: http://' + receivedHost_IP_string;
-}
 
+
+        //else if(strncmp((char const *)buf,"GET /get_all_settings", 21) == 0)
+
+        let getAllChannelSetttings = new XMLHttpRequest();
+
+        getAllChannelSetttings.open('GET', 'http://' + receivedHost_IP_string + '/get_all_settings');
+        getAllChannelSetttings.send();
+
+        getAllChannelSetttings.onload = function() {
+        let serverDataParsed = JSON.parse(getAllChannelSetttings.responseText);
+        console.log(serverDataParsed);
+        }
+
+
+    // console.log("Attempts: " + getHost_IP_LoopCount);
+    // console.log("IP string received inside: " + receivedHost_IP_string);
+}
+// Get server IP block - end ************************************************************************
+
+
+// let text = "Hello world!";
+// let result = text.substring(1, 4);
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Read server values and update document - begining ********************************************************************
 let getVoltages = new XMLHttpRequest(); // to receive data
 let getVoltagesLoopCount = 1;
 let DataReadingInterval = setInterval(getVoltagesLoop, 300);
@@ -84,16 +143,48 @@ getVoltages.onload = function () {
     let relay2DOM = document.getElementById('Relay2');
     relay2DOM.innerText = relay2_ReadValue;
 }
+// Read server values and update document - end ********************************************************************
 
 
-
+//actual version
 function SettingsChangeCH1(value)
 {    //should I block here other asynchronous GET or POST requests to make sure this one is handled?
+
+    console.log("test event");
 
     let postInstruction = new XMLHttpRequest();
     postInstruction.open('POST', 'http://' + receivedHost_IP_string);
     postInstruction.send("CH1 " + value);
     console.log(value);
+
+    postInstruction.onload = function()
+    {
+        console.log("Server responded: " + postInstruction.responseText);
+        //alert(postInstruction.responseText);
+
+        if("CH1 " + value == postInstruction.responseText) alert("Message delivered!");
+    }
+
+
+    // function makeFunc() {
+    //     var name = 'Mozilla';
+
+    //     function displayName() {
+    //       alert(name);
+    //     }
+    //     return displayName;
+    //   }
+      
+
+
+    //   var myFunc = makeFunc();
+    //   myFunc();
+
+
+
+
+
+
 }
 
 function SettingsChangeCH2(value)
@@ -111,3 +202,26 @@ function SettingsChangeCH3(value)
     postInstruction.send("CH3 " + value);
     console.log(value);
 }
+
+function SettingsChangeRelay1(value)
+{
+    let postInstruction = new XMLHttpRequest();
+    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    postInstruction.send("Relay1 " + value);
+    console.log(value);
+}
+
+function SettingsChangeRelay2(value)
+{
+    let postInstruction = new XMLHttpRequest();
+    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    postInstruction.send("Relay2 " + value);
+    console.log(value);
+}
+
+
+
+// if (typeof browser === "undefined") {
+//     var browser = chrome;
+// }
+// browser.downloads.download({url: "https://http://127.0.0.1:5500/index.html"});

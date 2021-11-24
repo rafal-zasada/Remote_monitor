@@ -18,7 +18,7 @@
     </div>
 
     <br>
-    <div class="host_IP_string" id="host_IP_string">Host IP for mobile access - reading...</div>
+    <div class="host_IP_string" id="host_IP_string"></div>
     <H1 class="title">Remote Channels</H1>    <!-- header -->
 
     <table class="read_table">
@@ -31,18 +31,19 @@
         <tr>
           <td class="table_channel">CH 1</td>
           <td class="table_reading" id="CH1_voltage">awaiting</td>
-          <td class="table_options">        
-            <select class="signal_type" onchange="SettingsChangeCH1(this.value);">
-              <option value='0'>free run</option>
-              <option value='2'>trig. + 2us</option>
-              <option value='5'>trig. + 5us</option>
-              <option value='9'>trig. + 9us</option>
-              <option value='14'>trig. + 14us</option>
-              <option value='19'>trig. + 19us</option>
-              <option value='24'>trig. + 24us</option>
-              <option value='29'>trig. + 29us</option>
-              <option value='39'>trig. + 39us</option>
-              <option value='49'>trig. + 49us</option>
+          <td class="table_settings">        
+                <select class="channel_setting" id="CH1_setting"  onchange= "SettingsChangeCH1(this.value);">
+                <option value='-1'>ADC free run</option>
+                <option value='1'>ADC 1us after trig.</option>
+                <option value='2'>ADC 2us after trig.</option>
+                <option value='3'>ADC 3us after trig.</option>
+                <option value='4'>ADC 4us after trig.</option>
+                <option value='5'>ADC 5us after trig.</option>
+                <option value='9'>ADC 9us after trig.</option>
+                <option value='19'>ADC 19us after trig.</option>
+                <option value='29'>ADC 29us after trig.</option>
+                <option value='39'>ADC 39us after trig.</option>
+                <option value='49'>ADC 49us after trig.</option>
             </select>            
           </td>
         </tr>
@@ -50,18 +51,19 @@
         <tr>
           <td class="table_channel">CH 2</td>
           <td class="table_reading" id="CH2_voltage">awaiting</td>
-          <td class="table_options">
-            <select class="signal_type" onchange="SettingsChangeCH2(this.value);">
-                <option value='0'>free run</option>
-                <option value='2'>trig. + 2us</option>
-                <option value='5'>trig. + 5us</option>
-                <option value='9'>trig. + 9us</option>
-                <option value='14'>trig. + 14us</option>
-                <option value='19'>trig. + 19us</option>
-                <option value='24'>trig. + 24us</option>
-                <option value='29'>trig. + 29us</option>
-                <option value='39'>trig. + 39us</option>
-                <option value='49'>trig. + 49us</option>
+          <td class="table_settings">
+            <select class="channel_setting" id="CH2_setting" onchange="SettingsChangeCH2(this.value);">
+                <option value='-1'>ADC free run</option>
+                <option value='1'>ADC 1us after trig.</option>
+                <option value='2'>ADC 2us after trig.</option>
+                <option value='3'>ADC 3us after trig.</option>
+                <option value='4'>ADC 4us after trig.</option>
+                <option value='5'>ADC 5us after trig.</option>
+                <option value='9'>ADC 9us after trig.</option>
+                <option value='19'>ADC 19us after trig.</option>
+                <option value='29'>ADC 29us after trig.</option>
+                <option value='39'>ADC 39us after trig.</option>
+                <option value='49'>ADC 49us after trig.</option>
               </select>               
           </td>
         </tr>
@@ -69,18 +71,20 @@
         <tr>
           <td class="table_channel">CH 3</td>
           <td class="table_reading" id="CH3_voltage">awaiting</td>
-          <td class="table_options">              
-            <select class="signal_type" onchange="SettingsChangeCH3(this.value);">
-                <option value='0'>free run</option>
-                <option value='2'>trig. + 2us</option>
-                <option value='5'>trig. + 5us</option>
-                <option value='9'>trig. + 9us</option>
-                <option value='14'>trig. + 14us</option>
-                <option value='19'>trig. + 19us</option>
-                <option value='24'>trig. + 24us</option>
-                <option value='29'>trig. + 29us</option>
-                <option value='39'>trig. + 39us</option>
-                <option value='49'>trig. + 49us</option>
+          <td class="table_settings">              
+            <select class="channel_setting" id="CH3_setting" onchange="SettingsChangeCH3(this.value);">
+                <option value='-1'>ADC free run</option>
+                <option value='1'>ADC 1us after trig.</option>
+                <option value='2'>ADC 2us after trig.</option>
+                <option value='3'>ADC 3us after trig.</option>
+                <option value='4'>ADC 4us after trig.</option>
+                <option value='5'>ADC 5us after trig.</option>
+                <option value='9'>ADC 9us after trig.</option>
+                <option value='19'>ADC 19us after trig.</option>
+                <option value='29'>ADC 29us after trig.</option>
+                <option value='39'>ADC 39us after trig.</option>
+                <option value='49'>ADC 49us after trig.</option>
+
             </select> 
           </td>
         </tr>
@@ -88,20 +92,20 @@
         <tr>
           <td class="table_channel">TC 1</td> 
           <td class="table_reading" id="TC1_temp">awaiting</td>
-          <td class="table_options"></td>
+          <td class="table_settings"></td>
         </tr>
 
         <tr>
           <td class="table_channel">TC 2</td>
           <td class="table_reading" id="TC2_temp">awaiting</td>
-          <td class="table_options"></td>
+          <td class="table_settings"></td>
         </tr>
 
         <tr>
           <td class="table_channel">Relay 1</td>
           <td class="table_reading" id="Relay1">awaiting</td>
-          <td class="table_options">
-            <select class="signal_type" onchange="SettingsChangeRelay1(this.value);">
+          <td class="table_settings">
+            <select class="channel_setting" id="Relay1_setting" onchange="SettingsChangeRelay1(this.value);">
                 <option value='1'>Close</option>
                 <option value='2'>Open</option>
             </select> 
@@ -112,8 +116,8 @@
         <tr>
           <td class="table_channel">Relay 2</td>
           <td class="table_reading" id="Relay2">awaiting</td>
-          <td class="table_options">
-            <select class="signal_type" onchange="SettingsChangeRelay2(this.value);">
+          <td class="table_settings">
+            <select class="channel_setting" id="Relay1_setting" onchange="SettingsChangeRelay2(this.value);">
                 <option value='1'>Close</option>
                 <option value='2'>Open</option>
             </select> 
@@ -122,6 +126,14 @@
       </table>
 
     <script src="js/main.js"></script>
+
+
+<a href="http://127.0.0.1:5500/index.html" download >Download this file</a>
+
+
+
+
+
 </body>
 </html>
 
