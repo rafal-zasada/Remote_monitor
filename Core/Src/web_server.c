@@ -24,7 +24,6 @@ static void send_all_settings(struct netconn *conn);
 void WebServerInit(void)
 {
 	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // LwIP specific function
-//	sys_thread_new("myHTTP", WebServerThread, NULL, 1500, osPriorityNormal);
 }
 
 static void WebServerThread(void *arg)
@@ -57,11 +56,6 @@ static void WebServerThread(void *arg)
 
 static void http_server_serve(struct netconn *conn) // new connection service
 {
-	// debug start
-	// snprintf(GUI_buffer, sizeof(GUI_buffer), " \nServing HTTP request \n ");
-	// HAL_UART_Transmit(&huart3, (unsigned char*)&GUI_buffer , strlen(GUI_buffer) + 1, 200);
-	// debug end
-
 	struct netbuf *inbuf;
 	err_t recv_err;
 	char* buf;			// just a pointer without copying inbuf ???
@@ -174,17 +168,16 @@ static void http_server_serve(struct netconn *conn) // new connection service
 }
 
 
-int CH1_setting = 11;
-int CH2_setting = 12;
-int CH3_setting = 13;
-int Relay1_setting = 14;
-int Relay2_setting = 15;
+int CH1_setting = 3;
+int CH2_setting = 4;
+int CH3_setting = 5;
+int Relay1_setting = 1;
+int Relay2_setting = 0;
 
 static void send_all_settings(struct netconn *conn)
 {
 	char Message[300];
 
-//	osDelay(20000);
 	HAL_UART_Transmit(&huart3, (char unsigned*)"\n\nSend all settings triggered on server\n\n", 19, 200);
 
 	snprintf(Message, sizeof(Message), 	"HTTP/1.1 200 OK\r\n"
@@ -198,7 +191,7 @@ static void send_all_settings(struct netconn *conn)
 										"\"Relay2_setting\" : \"%d\""
 										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting);
 
-//	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
+	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
 
 }
 
@@ -219,28 +212,41 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			strncpy(receivedMessage, messagePointer, receivedMessageLength);
 			receivedMessage[receivedMessageLength] = 0;							// terminate string
 
-			HAL_UART_Transmit(&huart3, (uint8_t*)receivedMessage, strlen(receivedMessage), 200);
+			// Data format for communication with server (settings only)
+			// First 3 characters - parameter
+			// Forth character - space
+			// Fifth, sixth, seventh character - value
+
+			char parameter[4] = {0};
+			char parameter_value[4] ={0};
+			char *dummy_ptr;
+			int setting_value = 0;
+
+			strncpy(parameter, receivedMessage, 3);
+			strncpy(parameter_value, receivedMessage + 4, 3);
+
+			HAL_UART_Transmit(&huart3, "\nParameter =", 12, 100);
+			HAL_UART_Transmit(&huart3, parameter, 3, 100);
+			HAL_UART_Transmit(&huart3, "\nParameter value =", 18, 100);
+			HAL_UART_Transmit(&huart3, parameter_value, 3, 100);
+			HAL_UART_Transmit(&huart3, "\n", 1, 100);
+
+			setting_value = strtol(parameter_value, &dummy_ptr, 10);    // string to long integer
+
+			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\n\nConverted value = %d\n\n", setting_value);
+			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+
 
 			char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
 								//	"Content-Type: text/html\r\n"			// do I need this in this response?
 									"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
 									"\r\n";									// second\r\n mandatory to mark end of header!
 
-			// Data format for communication with server (settings only)
-			// First 3 characters - parameter
-			// Forth character - space
-			// Fifth, sixth, seventh character - value
-
-
 			strcat(serverResponse, receivedMessage);
-
-			netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY);
+			netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
 		}
 	}
 }
-
-
-
 
 
 
@@ -254,7 +260,7 @@ int relay2 = 1;
 
 void send_monitor_data(struct netconn *conn)
 {
-	char JSON_data[250] = {0};
+	char JSON_data[350] = {0};
 
 	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%d\","
 											"\"voltage2\" : \"%d\","
@@ -263,7 +269,7 @@ void send_monitor_data(struct netconn *conn)
 											"\"temperature2\" : \"%d\","
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\""
-											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, ++relay1, ++relay2);
+											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, relay1, relay2);
 
 	char response[300] = 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"

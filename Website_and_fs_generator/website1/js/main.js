@@ -1,25 +1,19 @@
 
-let Setting_CH1;
-let Setting_CH2;
-let Setting_CH3;
-let Relay1;
-let Relay2;
 
-// Data format for communication with server (settings only)
-// First 3 characters - parameter
-// Forth character - space
-// Fifth, sixth, seventh character - value
 
-let test1 = document.getElementById('CH1_setting');
-// console.log(test1.value);
-test1.value = -5;
+let Setting_CH1_DOM = document.getElementById('CH1_setting');
+let Setting_CH2_DOM = document.getElementById('CH2_setting');
+let Setting_CH3_DOM = document.getElementById('CH3_setting');
+let Setting_Relay1_DOM = document.getElementById('Relay1_setting');
+let Setting_Relay2_DOM = document.getElementById('Relay2_setting');
+
 
 
 
 // Get server IP block - begining ************************************************************************
 let getHost_IP_LoopCount = 0;
 let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500);
-let getHost_IP = new XMLHttpRequest();
+let request_getHost_IP = new XMLHttpRequest();
 let receivedHost_IP_string = ""; // string
 let host_IP_stringKnown = false;
 
@@ -32,16 +26,18 @@ function getHost_IP_Loop() {
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
         console.log("Test");
+        getAllChannelSettings();
         return; 
     }
 
-    getHost_IP.open('GET', 'http://monitor1/get_host_IP');
-    getHost_IP.send();
+    request_getHost_IP.open('GET', 'http://monitor1/get_host_IP');
+    request_getHost_IP.send();
     getHost_IP_LoopCount++;
 
     if(receivedHost_IP_string != "") {
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
+        getAllChannelSettings();
     }
 
     if(getHost_IP_LoopCount > 6 && receivedHost_IP_string == "") {
@@ -50,30 +46,37 @@ function getHost_IP_Loop() {
     };
 }
 
-getHost_IP.onload = function() {
+request_getHost_IP.onload = function() {
     let host_IP_stringDOM = document.getElementById('host_IP_string');
 
-    receivedHost_IP_string = getHost_IP.responseText;
+    receivedHost_IP_string = request_getHost_IP.responseText;
     host_IP_stringDOM.innerText = 'To access this website from mobile use: http://' + receivedHost_IP_string;
-
-
-        //else if(strncmp((char const *)buf,"GET /get_all_settings", 21) == 0)
-
-        let getAllChannelSetttings = new XMLHttpRequest();
-
-        getAllChannelSetttings.open('GET', 'http://' + receivedHost_IP_string + '/get_all_settings');
-        getAllChannelSetttings.send();
-
-        getAllChannelSetttings.onload = function() {
-        let serverDataParsed = JSON.parse(getAllChannelSetttings.responseText);
-        console.log(serverDataParsed);
-        }
-
-
-    // console.log("Attempts: " + getHost_IP_LoopCount);
-    // console.log("IP string received inside: " + receivedHost_IP_string);
 }
-// Get server IP block - end ************************************************************************
+
+
+
+function getAllChannelSettings() {
+    let request_getAllChannelSetttings = new XMLHttpRequest();
+
+    request_getAllChannelSetttings.open('GET', 'http://' + receivedHost_IP_string + '/get_all_settings');
+    request_getAllChannelSetttings.send();
+
+    request_getAllChannelSetttings.onload = function() {
+    let serverDataParsed = JSON.parse(request_getAllChannelSetttings.responseText);
+
+    console.log(serverDataParsed);
+    Setting_CH1_DOM.value = serverDataParsed.Ch1_setting;
+    Setting_CH2_DOM.value = serverDataParsed.Ch2_setting;
+    Setting_CH3_DOM.value = serverDataParsed.Ch3_setting;
+    Setting_Relay1_DOM.value = serverDataParsed.Relay1_setting;
+    Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting;
+
+
+    
+
+    }
+}
+
 
 
 // let text = "Hello world!";
@@ -81,37 +84,28 @@ getHost_IP.onload = function() {
 
 
 
-
-
-
-
-
-
-
-
-
-
 // Read server values and update document - begining ********************************************************************
-let getVoltages = new XMLHttpRequest(); // to receive data
+let request_getVoltages = new XMLHttpRequest(); // to receive data
 let getVoltagesLoopCount = 1;
-let DataReadingInterval = setInterval(getVoltagesLoop, 300);
+let DataReadingInterval = setInterval(getVoltagesLoop, 700);
 
 function getVoltagesLoop() {
 
     if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
 
-    getVoltages.open('GET', 'http://' + receivedHost_IP_string + '/data1');
-    getVoltages.send();
+    request_getVoltages.open('GET', 'http://' + receivedHost_IP_string + '/data1');
+    request_getVoltages.send();
+    getVoltagesLoopCount++;
 
-    console.log(getVoltagesLoopCount++);
+    //  console.log(getVoltagesLoopCount);
 
     if (getVoltagesLoopCount > 7) {
         clearInterval(DataReadingInterval); 
     }
 }
 
-getVoltages.onload = function () {
-    let serverDataParsed = JSON.parse(getVoltages.responseText);
+request_getVoltages.onload = function () {
+    let serverDataParsed = JSON.parse(request_getVoltages.responseText);
     console.log(serverDataParsed);
 
     let voltage1_ReadValue = serverDataParsed.voltage1;
@@ -122,101 +116,120 @@ getVoltages.onload = function () {
     let relay1_ReadValue = serverDataParsed.relay1;
     let relay2_ReadValue = serverDataParsed.relay2;
 
-    let voltage1DOM = document.getElementById('CH1_voltage');
-    voltage1DOM.innerText = voltage1_ReadValue + " V";
+    document.getElementById('CH1_voltage').innerText = voltage1_ReadValue + " V";
+    document.getElementById('CH2_voltage').innerText = voltage2_ReadValue + " V";
+    document.getElementById('CH3_voltage').innerText = voltage3_ReadValue + " V";
+    document.getElementById('TC1_temp').innerText = temperature1_ReadValue + " °C";
+    document.getElementById('TC2_temp').innerText = temperature2_ReadValue + " °C";
 
-    let voltage2DOM = document.getElementById('CH2_voltage');
-    voltage2DOM.innerText = voltage2_ReadValue + " V";
+    if(relay1_ReadValue == 0)
+    document.getElementById('Relay1').innerText = "Closed";
+    else
+    document.getElementById('Relay1').innerText = "Opened";
 
-    let voltage3DOM = document.getElementById('CH3_voltage');
-    voltage3DOM.innerText = voltage3_ReadValue + " V";
-
-    let temperature1DOM = document.getElementById('TC1_temp');
-    temperature1DOM.innerText = temperature1_ReadValue + " °C";
-
-    let temperature2DOM = document.getElementById('TC2_temp');
-    temperature2DOM.innerText = temperature2_ReadValue + " °C";
-
-    let relay1DOM = document.getElementById('Relay1');
-    relay1DOM.innerText = relay1_ReadValue;
-
-    let relay2DOM = document.getElementById('Relay2');
-    relay2DOM.innerText = relay2_ReadValue;
+    if(relay2_ReadValue == 0)
+    document.getElementById('Relay2').innerText = "Closed";
+    else
+    document.getElementById('Relay2').innerText = "Opened";
 }
-// Read server values and update document - end ********************************************************************
 
 
-//actual version
+			// Data format for communication with server (settings only)
+			// First 3 characters - parameter
+			// Forth character - space
+			// Fifth, sixth, seventh character - value
 function SettingsChangeCH1(value)
-{    //should I block here other asynchronous GET or POST requests to make sure this one is handled?
+{   
+    let valueTemp = document.getElementById('CH1_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
 
-    console.log("test event");
+    document.getElementById('CH1_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("CH1 " + value);
 
-    let postInstruction = new XMLHttpRequest();
-    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    postInstruction.send("CH1 " + value);
-    console.log(value);
-
-    postInstruction.onload = function()
+    request_postInstruction.onload = function()
     {
-        console.log("Server responded: " + postInstruction.responseText);
-        //alert(postInstruction.responseText);
-
-        if("CH1 " + value == postInstruction.responseText) alert("Message delivered!");
+        if("CH1 " + value == request_postInstruction.responseText) {
+            document.getElementById('CH1_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
     }
-
-
-    // function makeFunc() {
-    //     var name = 'Mozilla';
-
-    //     function displayName() {
-    //       alert(name);
-    //     }
-    //     return displayName;
-    //   }
-      
-
-
-    //   var myFunc = makeFunc();
-    //   myFunc();
-
-
-
-
-
-
 }
+
 
 function SettingsChangeCH2(value)
-{
-    let postInstruction = new XMLHttpRequest();
-    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    postInstruction.send("CH2 " + value);
-    console.log(value);
+{   
+    let valueTemp = document.getElementById('CH2_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('CH2_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("CH2 " + value);
+
+    request_postInstruction.onload = function()
+    {
+        if("CH2 " + value == request_postInstruction.responseText) {
+            document.getElementById('CH2_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
+    }
 }
+
 
 function SettingsChangeCH3(value)
-{
-    let postInstruction = new XMLHttpRequest();
-    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    postInstruction.send("CH3 " + value);
-    console.log(value);
+{   
+    let valueTemp = document.getElementById('CH3_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('CH3_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("CH3 " + value);
+
+    request_postInstruction.onload = function()
+    {
+        if("CH3 " + value == request_postInstruction.responseText) {
+            document.getElementById('CH3_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
+    }
 }
+
 
 function SettingsChangeRelay1(value)
-{
-    let postInstruction = new XMLHttpRequest();
-    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    postInstruction.send("Relay1 " + value);
-    console.log(value);
+{   
+    let valueTemp = document.getElementById('Relay1_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('Relay1_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("Re1 " + value);
+
+    request_postInstruction.onload = function()
+    {
+        if("Re1 " + value == request_postInstruction.responseText) {
+            document.getElementById('Relay1_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
+    }
 }
 
+
 function SettingsChangeRelay2(value)
-{
-    let postInstruction = new XMLHttpRequest();
-    postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    postInstruction.send("Relay2 " + value);
-    console.log(value);
+{   
+    let valueTemp = document.getElementById('Relay2_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('Relay2_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("Re2 " + value);
+
+    request_postInstruction.onload = function()
+    {
+        if("Re2 " + value == request_postInstruction.responseText) {
+            document.getElementById('Relay2_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
+    }
 }
 
 

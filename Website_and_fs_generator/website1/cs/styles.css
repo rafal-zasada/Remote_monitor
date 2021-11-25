@@ -85,11 +85,13 @@ td, th {
 
 .table_settings {
     text-align: center;
+
     /* width: 120px;
     min-width: 120px; */
 }
 
 .channel_setting {
+    background-color: white;
     padding: 0px;
     width: 227px;
 }
