@@ -37,7 +37,7 @@ function getHost_IP_Loop() {
     if(receivedHost_IP_string != "") {
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
-        getAllChannelSettings();
+        getAllChannelSettings();                        // should I try few times to make sure it is updated?
     }
 
     if(getHost_IP_LoopCount > 6 && receivedHost_IP_string == "") {
@@ -69,11 +69,7 @@ function getAllChannelSettings() {
     Setting_CH2_DOM.value = serverDataParsed.Ch2_setting;
     Setting_CH3_DOM.value = serverDataParsed.Ch3_setting;
     Setting_Relay1_DOM.value = serverDataParsed.Relay1_setting;
-    Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting;
-
-
-    
-
+    Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting; 
     }
 }
 
@@ -87,7 +83,6 @@ let getVoltagesLoopCount = 1;
 let DataReadingInterval = setInterval(getMonitorReadingsLoop, 250);
 
 function getMonitorReadingsLoop() {
-
     if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
 
     request_getMonitorReadings.open('GET', 'http://' + receivedHost_IP_string + '/data1');
@@ -119,27 +114,20 @@ request_getMonitorReadings.onload = function () {
     document.getElementById('TC1_temp').innerText = temperature1_ReadValue + " °C";
     document.getElementById('TC2_temp').innerText = temperature2_ReadValue + " °C";
 
-    // update channel settings in case they have been changed by another client
-
     if(relay1_ReadValue == 0) {
         document.getElementById('Relay1').innerText = "Closed";
-        document.getElementById('Relay1_setting').value = 0;       //update setting of relay in case it has been changed by another client
     }
     else {
         document.getElementById('Relay1').innerText = "Opened";
-        document.getElementById('Relay1_setting').value = 1;
     }
 
     if(relay2_ReadValue == 1) {
         document.getElementById('Relay2').innerText = "Opened";
-        document.getElementById('Relay2_setting').value = 1;       //update setting of relay in case it has been changed by another client
     }
     else {
         document.getElementById('Relay2').innerText = "Closed";
-        document.getElementById('Relay2_setting').value = 0;
     }
 }
-
 
 			// Data format for communication with server (settings only)
 			// First 3 characters - parameter
@@ -150,7 +138,7 @@ function SettingsChangeCH1(value)
     let valueTemp = document.getElementById('CH1_setting').value;
     let request_postInstruction = new XMLHttpRequest();
 
-    document.getElementById('CH1_setting').value = -9; // blank select field by changing to non existent element 
+    document.getElementById('CH1_setting').value = -9;          // blank select field by changing to non existent element 
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
     request_postInstruction.send("CH1 " + value);
 
@@ -241,7 +229,78 @@ function SettingsChangeRelay2(value)
 
 
 
-// if (typeof browser === "undefined") {
-//     var browser = chrome;
+let inactivityWatchdog = function() {
+    window.addEventListener('blur', setTimer);
+    window.addEventListener('focus', resetTimer);
+    
+    let time;
+    
+    function setTimer() {
+        time = setTimeout(logout, 600000);  // 10 minutes interval
+    }
+    
+    function resetTimer() {
+        clearTimeout(time);  
+    }
+    
+    function logout() {
+    alert("Updates stopped due to inactivity. Press OK to continue");
+    }
+}
+
+inactivityWatchdog();
+
+
+
+// var count = 0;
+// var myInterval;
+// // Active
+// window.addEventListener('focus', startTimer);
+
+// // Inactive
+// window.addEventListener('blur', stopTimer);
+
+// function timerHandler() {
+//  count++;
+//  document.getElementById("seconds").innerHTML = count;
 // }
-// browser.downloads.download({url: "https://http://127.0.0.1:5500/index.html"});
+
+// // Start timer
+// function startTimer() {
+//  console.log('focus');
+//  myInterval = window.setInterval(timerHandler, 1000);
+// }
+
+// // Stop timer
+// function stopTimer() {
+//  window.clearInterval(myInterval);
+// }
+
+
+
+// let inactivityTime = function () {
+//     let time;
+//     window.onload = resetTimer;             // continously runnig asynchronous funtions?
+//     document.onmousemove = resetTimer;
+//     document.onkeydown = resetTimer;
+
+//     function logout() {
+//       alert("Updates stopped due to inactivity longer than 15 minutes. Press OK to continue")
+//     }
+
+//     function resetTimer() {
+//       clearTimeout(time);
+//       time = setTimeout(logout, 4000)
+
+//         console.log("Test");
+
+
+//     }
+//   };
+
+//   inactivityTime();
+
+
+
+
+
