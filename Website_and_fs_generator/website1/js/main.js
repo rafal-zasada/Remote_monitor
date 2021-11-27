@@ -77,35 +77,32 @@ function getAllChannelSettings() {
     }
 }
 
-
-
 // let text = "Hello world!";
 // let result = text.substring(1, 4);
 
 
-
 // Read server values and update document - begining ********************************************************************
-let request_getVoltages = new XMLHttpRequest(); // to receive data
+let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
 let getVoltagesLoopCount = 1;
-let DataReadingInterval = setInterval(getVoltagesLoop, 700);
+let DataReadingInterval = setInterval(getMonitorReadingsLoop, 250);
 
-function getVoltagesLoop() {
+function getMonitorReadingsLoop() {
 
     if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
 
-    request_getVoltages.open('GET', 'http://' + receivedHost_IP_string + '/data1');
-    request_getVoltages.send();
+    request_getMonitorReadings.open('GET', 'http://' + receivedHost_IP_string + '/data1');
+    request_getMonitorReadings.send();
     getVoltagesLoopCount++;
 
     //  console.log(getVoltagesLoopCount);
 
-    if (getVoltagesLoopCount > 7) {
+    if (getVoltagesLoopCount > 1150) {
         clearInterval(DataReadingInterval); 
     }
 }
 
-request_getVoltages.onload = function () {
-    let serverDataParsed = JSON.parse(request_getVoltages.responseText);
+request_getMonitorReadings.onload = function () {
+    let serverDataParsed = JSON.parse(request_getMonitorReadings.responseText);
     console.log(serverDataParsed);
 
     let voltage1_ReadValue = serverDataParsed.voltage1;
@@ -122,15 +119,25 @@ request_getVoltages.onload = function () {
     document.getElementById('TC1_temp').innerText = temperature1_ReadValue + " °C";
     document.getElementById('TC2_temp').innerText = temperature2_ReadValue + " °C";
 
-    if(relay1_ReadValue == 0)
-    document.getElementById('Relay1').innerText = "Closed";
-    else
-    document.getElementById('Relay1').innerText = "Opened";
+    // update channel settings in case they have been changed by another client
 
-    if(relay2_ReadValue == 0)
-    document.getElementById('Relay2').innerText = "Closed";
-    else
-    document.getElementById('Relay2').innerText = "Opened";
+    if(relay1_ReadValue == 0) {
+        document.getElementById('Relay1').innerText = "Closed";
+        document.getElementById('Relay1_setting').value = 0;       //update setting of relay in case it has been changed by another client
+    }
+    else {
+        document.getElementById('Relay1').innerText = "Opened";
+        document.getElementById('Relay1_setting').value = 1;
+    }
+
+    if(relay2_ReadValue == 1) {
+        document.getElementById('Relay2').innerText = "Opened";
+        document.getElementById('Relay2_setting').value = 1;       //update setting of relay in case it has been changed by another client
+    }
+    else {
+        document.getElementById('Relay2').innerText = "Closed";
+        document.getElementById('Relay2_setting').value = 0;
+    }
 }
 
 

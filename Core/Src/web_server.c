@@ -171,8 +171,8 @@ static void http_server_serve(struct netconn *conn) // new connection service
 int CH1_setting = 3;
 int CH2_setting = 4;
 int CH3_setting = 5;
-int Relay1_setting = 1;
-int Relay2_setting = 0;
+int Relay1_setting = 1;  // relay setting = its value
+int Relay2_setting = 0;  // relay setting = its value
 
 static void send_all_settings(struct netconn *conn)
 {
@@ -220,7 +220,6 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			char parameter[4] = {0};
 			char parameter_value[4] ={0};
 			char *dummy_ptr;
-			int setting_value = 0;
 
 			strncpy(parameter, receivedMessage, 3);
 			strncpy(parameter_value, receivedMessage + 4, 3);
@@ -231,10 +230,20 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			HAL_UART_Transmit(&huart3, parameter_value, 3, 100);
 			HAL_UART_Transmit(&huart3, "\n", 1, 100);
 
-			setting_value = strtol(parameter_value, &dummy_ptr, 10);    // string to long integer
 
-			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\n\nConverted value = %d\n\n", setting_value);
-			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+//			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\n\nConverted value = %d\n\n", setting_value);
+//			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
+
+			if(strncmp(parameter, "CH1", 3) == 0)
+				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
+			if(strncmp(parameter, "CH2", 3) == 0)
+				CH2_setting = strtol(parameter_value, &dummy_ptr, 10);
+			if(strncmp(parameter, "CH3", 3) == 0)
+				CH3_setting = strtol(parameter_value, &dummy_ptr, 10);
+			if(strncmp(parameter, "Re1", 3) == 0)
+				Relay1_setting = strtol(parameter_value, &dummy_ptr, 10);
+			if(strncmp(parameter, "Re2", 3) == 0)
+				Relay2_setting = strtol(parameter_value, &dummy_ptr, 10);
 
 
 			char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
@@ -249,17 +258,23 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 }
 
 
-
 int voltage1 = 233;
 int voltage2 = 223;
 int voltage3 = 255;
 int temperature1 = 40;
 int temperature2 = 30;
-int relay1 = 0;
-int relay2 = 1;
+//int relay1 = 0;
+//int relay2 = 1;
 
 void send_monitor_data(struct netconn *conn)
 {
+	char response[300] = 	"HTTP/1.1 200 OK\r\n"
+										"Content-Type: text/html\r\n"
+										"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
+									//	"Content-Length : 20\r\n"				// not necessary, length will be established in other way
+									//	"Connection: keep-alive \r\n";			// purpose?
+										"\r\n";  								// second\r\n mandatory to mark end of header!
+
 	char JSON_data[350] = {0};
 
 	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%d\","
@@ -269,14 +284,9 @@ void send_monitor_data(struct netconn *conn)
 											"\"temperature2\" : \"%d\","
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\""
-											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, relay1, relay2);
+											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, Relay1_setting, Relay2_setting);
 
-	char response[300] = 	"HTTP/1.1 200 OK\r\n"
-										"Content-Type: text/html\r\n"
-										"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
-									//	"Content-Length : 20\r\n"				// not necessary, length will be established in other way
-									//	"Connection: keep-alive \r\n";			// purpose?
-										"\r\n";  								// second\r\n mandatory to mark end of header!
+
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);
