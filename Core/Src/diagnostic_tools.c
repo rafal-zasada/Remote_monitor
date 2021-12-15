@@ -28,8 +28,7 @@ void GUI_UART_Task(void const *argument)
 	{
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-//			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Test value \n");
-//			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 50);
+			printf("\nTest of printf\n");
 
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
 			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
@@ -60,15 +59,23 @@ void GUI_UART_Task(void const *argument)
 	}
 }
 
+// redirecting printf to UART
+/* Get newlib's definition of "reent" */
+#include <reent.h>
+#include "main.h"
 
+// newlib nano provides a stub version of "_write_r()" that does nothing.  The stub has a weak binding, so defining the function in your own files will override the stub.
+_ssize_t _write_r(struct _reent *ptr, /* Don't worry about what's in this for the simple case */
+                  int fd, /* ignored */
+                  const void* buf, /* the data to be sent out the UART */
+                  size_t      cnt) /* the number of bytes to be sent */
+{
+   // Replace "huart3" with the pointer to the UART or USART instance you are using in your project
+   HAL_UART_Transmit(&huart3, (uint8_t*)buf, cnt, 1000);
+   return (_ssize_t)cnt;
+}
 
-
-
-
-//************************************
-
-
-
+// checks whether stack overflow occured
 void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 {
 	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Overflow detected in: %s\n", pcTaskName);
@@ -77,11 +84,10 @@ void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 	osDelay(1000);
 }
 
-//  If sum of all defined (used?) stack sizes is more than configTOTAL_HEAP_SIZE it will cause problems!
+//  Sum of all defined (used?) stack can't be more than configTOTAL_HEAP_SIZE!
 // defined stack size is in words, configTOTAL_HEAP_SIZE is in bytes !
 
 // https://www.freertos.org/uxTaskGetStackHighWaterMark.html  - check stack usage
-
 
 // Call xPortGetFreeHeapSize(), create your tasks queues semaphores etc. then call xPortGetFreeHeapSize() again to find the difference. http://www.freertos.org/a00111.html
 // There’s also  xPortGetMinimumEverFreeHeapSize() but only when using heap4

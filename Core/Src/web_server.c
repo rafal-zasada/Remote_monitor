@@ -23,11 +23,14 @@ static void send_all_settings(struct netconn *conn);
 
 void WebServerInit(void)
 {
-	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // LwIP specific function
+	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // LwIP specific function ?
 }
 
 static void WebServerThread(void *arg)
 {
+
+	printf("\nWebserver started\n");
+
 	struct netconn *conn, *newconn;
 	err_t err, accept_err;
 
