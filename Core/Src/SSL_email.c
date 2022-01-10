@@ -48,6 +48,7 @@
 #include "diagnostic_tools.h"
 #include "netif.h"  // for netif type
 #include "SSL_email.h"
+#include "base64.h"
 
 static mbedtls_net_context server_fd;
 static uint32_t flags;
@@ -58,52 +59,33 @@ static int ret;
 extern struct netif gnetif;
 osThreadId send_SSL_emailTaskHandle;
 
-#define SERVER_PORT "465"
-#define SERVER_NAME "smtp.gmail.com"
 
-//USE_DHCP
-#define IP_ADDR0  0
-#define IP_ADDR1  0
-#define IP_ADDR2  0
-#define IP_ADDR3  0
+#define EMAIL_LOGIN_ASCII_BUF_SIZE 75
+#define EMAIL_PASSWORD_ASCII_BUF_SIZE 75
+#define EMAIL_LOGIN_BASE64_BUF_SIZE 100
+#define EMAIL_PASSWORD_BASE64_BUF_SIZE 100
 
-#define GW_ADDR0  0
-#define GW_ADDR1  0
-#define GW_ADDR2  0
-#define GW_ADDR3  0
-
-#define MASK_ADDR0  0
-#define MASK_ADDR1  0
-#define MASK_ADDR2  0
-#define MASK_ADDR3  0
-
-static void send_SSL_email_thread(void const *argument);
-static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
-static int write_SLL_data( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
-static void send_SSL_email(void);
-static void send_SSL_email_data(void);
-
-//from this example
-	//mbedtls_entropy_context entropy;
-	//mbedtls_ctr_drbg_context ctr_drbg;
-	//mbedtls_ssl_context ssl;
-	//mbedtls_ssl_config conf;
-	//mbedtls_x509_crt cacert;
+unsigned int bytes_written;
+unsigned char email_login_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE] = "bob200506@gmail.com";
+unsigned char email_password_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE] = "Bob12345";
+unsigned char email_login_base64[EMAIL_LOGIN_BASE64_BUF_SIZE];
+unsigned char email_password_base64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
 
 // already created in mbedtls.c
-	// mbedtls_ssl_context ssl;
-	// mbedtls_ssl_config conf;
-	// mbedtls_x509_crt cert;
-	// mbedtls_ctr_drbg_context ctr_drbg;
-	// mbedtls_entropy_context entropy;
-
 extern mbedtls_ssl_context ssl;
 extern mbedtls_ssl_config conf;
 extern mbedtls_x509_crt cert;
 extern mbedtls_ctr_drbg_context ctr_drbg;
 extern mbedtls_entropy_context entropy;
 
+#define SERVER_PORT "465"
+#define SERVER_NAME "smtp.gmail.com"
 
+static void send_SSL_email_thread(void const *argument);
+static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
+static int write_SLL_data( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
+static void send_SSL_email(void);
+static void send_SSL_email_data(void);
 
 /* use static allocation to keep the heap size as low as possible */
 #ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
@@ -120,15 +102,20 @@ void SSL_email_init(void)
 
 	printf("\nEnd SSL_email_init\n");
 	osDelay(1000);
-
 }
 
 static void send_SSL_email_thread(void const *argument)
 {
+	while(1)
+	{
+		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
+		{
+			send_SSL_email();
+			osDelay(1000);  // to avoid bouncing (not really necessary since send_SSL_email takes considerable time to execute)
+		}
 
-	send_SSL_email();
-	while(1);
-
+		osDelay(100);
+	}
 }
 
 static void send_SSL_email(void)
@@ -280,7 +267,6 @@ static void send_SSL_email(void)
 		mbedtls_printf( " ok\n" );
 	}
 
-
 	osDelay(2000);
 
 	len = 73;
@@ -290,7 +276,7 @@ static void send_SSL_email(void)
 	ret = mbedtls_ssl_read( &ssl, buf, len );
 	printf("\nBefore second mbedtls_ssl_read\n");
 	ret = mbedtls_ssl_read( &ssl, buf, len ); // second time to check timeout
-	printf("\nAfter second mbedtls_ssl_read\n");
+	printf("\nAfter second mbedtls_ssl_read, ret value = %d\n", ret); // ret value can be used for error checking (MBEDTLS_ERR_SSL_TIMEOUT -0x6800)
 
 	len = ret;
 	mbedtls_printf( " %d Bytes read after connecting and before sending:\n %s\n", len, (char *) buf );
@@ -318,9 +304,13 @@ static void send_SSL_email(void)
 	{
 		// Success_Handler();
 	}
-
-	osDelay(200000);
 }
+
+
+//from forum - solution for some other issues (not here) .....
+//__DMB();
+//__DSB();
+
 
 static void send_SSL_email_data(void)
 {
@@ -338,12 +328,20 @@ static void send_SSL_email_data(void)
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
 
-	//mbedtls_base64_encode
-	snprintf(send_buffer, sizeof(send_buffer), "Ym9iMjAwNTA2QGdtYWlsLmNvbQ==\r\n"); 	// login in base64 format
+//	unsigned char email_login_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE] = "bob200506@gmail.com";
+//	unsigned char email_password_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE] = "Bob12345";
+//	unsigned char email_login_base64[EMAIL_LOGIN_BASE64_BUF_SIZE];
+//	unsigned char email_password_base64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
+
+
+
+	mbedtls_base64_encode(email_login_base64, EMAIL_LOGIN_BASE64_BUF_SIZE, &bytes_written, email_login_ASCII, strlen((char*)email_login_ASCII));
+	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", email_login_base64); 			// login in base64 format required
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "Qm9iMTIzNDU=\r\n");						// password in base64 format
+	mbedtls_base64_encode(email_password_base64, EMAIL_PASSWORD_BASE64_BUF_SIZE, &bytes_written, email_password_ASCII, strlen((char*)email_password_ASCII));
+	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", email_password_base64);						// password in base64 format required
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 

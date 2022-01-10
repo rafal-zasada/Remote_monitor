@@ -31,3 +31,46 @@ with:
 
 
 
+from forum about STM32 ethernet issues (ST library issues - missing compiler and CPU memory barriers):
+NOTE! This is a bug report for all STM32 MCUs with Ethernet peripheral, but it has a highly valuable information for all software development on/for any platform. 
+
+Compiler barriers
+The compiler is not required to keep the code order of non-volatile variables, even relative to volatile variables. This is well described in an article "Nine ways to break your systems code using volatile" section "5. Expecting volatile to enforce ordering with non-volatile accesses".
+
+ 
+
+In a descriptor structure definition only Status member of the descriptor is qualified as volatile (__IO). When code sets ControlBufferSize, the compiler is not required to keep the code order of assignments and in compiled code setting OWN bit can be placed before writing ControlBufferSize.
+
+ 
+
+CPU memory barriers
+
+Even, when instructions are compiled in the intended order, the CPU is still not required to execute those in the compiled order. The Cortex-M7 processor can re-order memory transactions for efficiency, or perform speculative reads. Though at the moment of writing it is the only ARM Cortex-M core, which does it, but that can (and most likely will) change in a future. The solution is either to use DMB instruction or to configure descriptor memory as a device memory type with MPU. DSB instruction and strongly-ordered memory type also works, but are unnecessarily more restrictive. Also note that DTCM is always threated as normal memory type, regardless of MPU configuration.
+
+ 
+
+In addition to the previous example, ignorance of this introduces even more bugs. When checking-restarting DMA operation, if descriptor memory is not configured as a device memory type or is located in DTCM, instruction reordering can also cause DMASR to be read before OWN bit has been actually written.
+
+ 
+
+Solution
+
+ARM has introduced a __COMPILER_BARRIER() macro, but that is currently unavailable in ST's shipped code, because ST is slow on updating even the most basic CMSIS-Core header files. However those header files have __DMB() and __DSB() macros (even in ST's currently shipped versions), which besides the respective CPU memory barrier instruction also include a compiler barrier. The performance impact of CPU memory barrier instruction without actual barrier effect is negligible - just one clock tick.
+
+ 
+
+Therefore to make code correct for:
+
+All compilers at all optimization levels
+All Cortex-M cores, including Cortex-M7
+All memory types, including DTCM
+Memory configurations with or without MPU
+ 
+
+The universal fix is to put __DMB() macro just before:
+
+Setting OWN bit.
+Reading other descriptor words after checking OWN bit.
+Checking-resuming DMA operation.
+
+
