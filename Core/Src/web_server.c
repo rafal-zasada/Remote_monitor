@@ -23,7 +23,7 @@ static void send_all_settings(struct netconn *conn);
 
 void WebServerInit(void)
 {
-	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // LwIP specific function ?
+	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // function related to LwIP
 }
 
 static void WebServerThread(void *arg)
@@ -227,11 +227,11 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			strncpy(parameter, receivedMessage, 3);
 			strncpy(parameter_value, receivedMessage + 4, 3);
 
-			HAL_UART_Transmit(&huart3, "\nParameter =", 12, 100);
-			HAL_UART_Transmit(&huart3, parameter, 3, 100);
-			HAL_UART_Transmit(&huart3, "\nParameter value =", 18, 100);
-			HAL_UART_Transmit(&huart3, parameter_value, 3, 100);
-			HAL_UART_Transmit(&huart3, "\n", 1, 100);
+			HAL_UART_Transmit(&huart3, (uint8_t*)"\nParameter =", 12, 100);
+			HAL_UART_Transmit(&huart3, (uint8_t*)parameter, 3, 100);
+			HAL_UART_Transmit(&huart3, (uint8_t*)"\nParameter value =", 18, 100);
+			HAL_UART_Transmit(&huart3, (uint8_t*)parameter_value, 3, 100);
+			HAL_UART_Transmit(&huart3, (uint8_t*)"\n", 1, 100);
 
 
 //			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\n\nConverted value = %d\n\n", setting_value);
@@ -266,8 +266,7 @@ int voltage2 = 223;
 int voltage3 = 255;
 int temperature1 = 40;
 int temperature2 = 30;
-//int relay1 = 0;
-//int relay2 = 1;
+
 
 void send_monitor_data(struct netconn *conn)
 {

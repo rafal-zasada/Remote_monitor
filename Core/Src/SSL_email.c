@@ -32,7 +32,7 @@
 #define mbedtls_printf     printf
 #endif
 
-// a lot of #if options has been removed for clarity
+// a lot of #if options has been removed from original example for clarity
 
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/debug.h"
@@ -49,11 +49,12 @@
 #include "netif.h"  // for netif type
 #include "SSL_email.h"
 #include "base64.h"
+#include "lwip.h"  // for sys_thread_new()
 
 static mbedtls_net_context server_fd;
 static uint32_t flags;
 static uint8_t buf[1024];
-static const uint8_t *pers = (unsigned char*)"ssl_client";   // why?
+static const uint8_t *pers = (unsigned char*)"ssl_client";   // what for?
 static uint8_t vrfy_buf[512];
 static int ret;
 extern struct netif gnetif;
@@ -65,11 +66,14 @@ osThreadId send_SSL_emailTaskHandle;
 #define EMAIL_LOGIN_BASE64_BUF_SIZE 100
 #define EMAIL_PASSWORD_BASE64_BUF_SIZE 100
 
-unsigned int bytes_written;
-unsigned char email_login_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE] = "bob200506@gmail.com";
-unsigned char email_password_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE] = "Bob12345";
-unsigned char email_login_base64[EMAIL_LOGIN_BASE64_BUF_SIZE];
-unsigned char email_password_base64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
+struct emailData
+{
+	char serverPort[5];
+	char serverName[30];
+	char emailLogin_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE];
+	char emailPassword_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE];
+}email;
+
 
 // already created in mbedtls.c
 extern mbedtls_ssl_context ssl;
@@ -78,56 +82,56 @@ extern mbedtls_x509_crt cert;
 extern mbedtls_ctr_drbg_context ctr_drbg;
 extern mbedtls_entropy_context entropy;
 
-#define SERVER_PORT "465"
-#define SERVER_NAME "smtp.gmail.com"
+void send_SSL_email(char *recipient, char *emailSubject, char *emailBody);
 
-static void send_SSL_email_thread(void const *argument);
+static void send_SSL_email_thread(void *argument);
 static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
 static int write_SLL_data( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
-static void send_SSL_email(void);
-static void send_SSL_email_data(void);
-
-/* use static allocation to keep the heap size as low as possible */
-#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-uint8_t memory_buf[MAX_MEM_SIZE];
-#endif
+static void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody);
 
 void SSL_email_init(void)
 {
 	printf("\nStart SSL_email_init\n");
 
-	osThreadDef(send_SSL_emailTask, send_SSL_email_thread, osPriorityLow, 0, 2000);
-	printf("Another test\n");
-	send_SSL_emailTaskHandle = osThreadCreate(osThread(send_SSL_emailTask), NULL);
+//			from forum:
+//			From the lwIP doc: "Application threads that use lwIP must be created using the lwIP sys_thread_new API......
+	sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
 
-	printf("\nEnd SSL_email_init\n");
-	osDelay(1000);
+//	temporary hard coded here for testing:
+	strncpy(email.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
+//	email.serverPort[3] = '\0';
+	strncpy(email.serverName, "smtp.gmail.com", 15); //
+	strncpy(email.emailLogin_ASCII, "bob200506@gmail.com", 20);
+	strncpy(email.emailPassword_ASCII, "Bob12345", 9);
+
 }
 
-static void send_SSL_email_thread(void const *argument)
+static void send_SSL_email_thread(void *argument)
 {
 	while(1)
 	{
+		// add RTOS signal (semaphore) here to send email
+
+
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-			send_SSL_email();
+			send_SSL_email("zasi@poczta.onet.pl", "Nowy subject gg", "Email body \n tresc email");
 			osDelay(1000);  // to avoid bouncing (not really necessary since send_SSL_email takes considerable time to execute)
 		}
-
 		osDelay(100);
 	}
 }
 
-static void send_SSL_email(void)
+void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // those parameters are only passed to function inside this block
 {
 	int len;
 
 	/*
 	 * 0. Initialize the RNG and the session data
 	 */
-#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-	mbedtls_memory_buffer_alloc_init(memory_buf, sizeof(memory_buf));
-#endif
+//#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
+//	mbedtls_memory_buffer_alloc_init(memory_buf, sizeof(memory_buf));
+//#endif
 
 	osDelay(2000);
 
@@ -148,7 +152,6 @@ static void send_SSL_email(void)
 	// 1. Initialize certificates
 
 	mbedtls_printf( "  . Loading the CA root certificate ..." );
-//	ret = mbedtls_x509_crt_parse( &cacert, (const unsigned char *) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len );
 	ret = mbedtls_x509_crt_parse( &cert, (const unsigned char *) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len );
 
 	if( ret < 0 )
@@ -159,37 +162,35 @@ static void send_SSL_email(void)
 
 	mbedtls_printf( " ok (%d skipped)\n", ret );
 
-	// 2. Start the connection
+
 
 	//  from forum:
 	//  Setting up local IP address and netmask could get it working. But the root cause of the ERR_RTE (Routing problem) is that the TCP/IP stack has not finished
 	//  setting up the ip/netmask/gw before netconn_connect is called. That should be a err because the ip/netmask/gw are probably empty at that time.
 	//  The solution would be delay netconn_connect() until proper IP configuration is done.
+	osDelay(500); // neccessary to give allow time for setting up the ip/netmask/gw
 
-	osDelay(500);
-
-	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
-	HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
-
-
+	// 2. Start the connection
+	int count = 0;
 
 	do
 	{
-		static int count = 0;
-
 		count++;
 		printf("\nAttempt no %d\n", count);
-		mbedtls_printf( "  . Connecting to tcp/%s/%s...", SERVER_NAME, SERVER_PORT );
+		mbedtls_printf( "  . Connecting to tcp/%s/%s...", email.serverName, email.serverPort);
 
-		if((ret = mbedtls_net_connect(&server_fd, SERVER_NAME, SERVER_PORT, MBEDTLS_NET_PROTO_TCP)) != 0)
+		if((ret = mbedtls_net_connect(&server_fd, email.serverName, email.serverPort, MBEDTLS_NET_PROTO_TCP)) != 0) // connection unsuccessful
 		{
 			mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
-			//  goto exit;
+//			printf("Failed to connect on this occasion\n");
+			osDelay(250);
 		}
 
-		if(count == 10)
-			break;
-
+		if(count == 5)
+		{
+			printf("\nConnecting to server failed\n");
+			goto exit;
+		}
 	}while(ret != 0);
 
 	mbedtls_printf( " ok\n" );
@@ -226,11 +227,11 @@ static void send_SSL_email(void)
 		goto exit;
 	}
 
-//	mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL); // no timeout
-	mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, NULL, mbedtls_net_recv_timeout);
+//	mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL); 			// no receive timeout
+	mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, NULL, mbedtls_net_recv_timeout);	// receive timeout
 
 	//	Set the timeout period for mbedtls_ssl_read() (Default: no timeout.)
-	mbedtls_ssl_conf_read_timeout (&conf, 2000);
+	mbedtls_ssl_conf_read_timeout (&conf, 5000);
 
 
 	/*
@@ -267,38 +268,35 @@ static void send_SSL_email(void)
 		mbedtls_printf( " ok\n" );
 	}
 
-	osDelay(2000);
+//	osDelay(100);
 
-	len = 73;
+	mbedtls_ssl_conf_read_timeout (&conf, 2000); // reduce timeout as receiving is not as important as during handshake ?
 
-	printf("\nWhat is buffer len?, len = %d\n", len);
 
-	ret = mbedtls_ssl_read( &ssl, buf, len );
-	printf("\nBefore second mbedtls_ssl_read\n");
-	ret = mbedtls_ssl_read( &ssl, buf, len ); // second time to check timeout
-	printf("\nAfter second mbedtls_ssl_read, ret value = %d\n", ret); // ret value can be used for error checking (MBEDTLS_ERR_SSL_TIMEOUT -0x6800)
-
+	ret = mbedtls_ssl_read( &ssl, buf, len ); // ret value can be used for error checking (MBEDTLS_ERR_SSL_TIMEOUT -0x6800)
 	len = ret;
 	mbedtls_printf( " %d Bytes read after connecting and before sending:\n %s\n", len, (char *) buf );
+	osDelay(100);
 
-
-	osDelay(1000);
-
-	send_SSL_email_data();
-
+//	void send_SSL_email(char *recipient, char *emailSubject, char *emailBody)
+	send_SSL_email_data(recipient, emailSubject, emailBody);
 	mbedtls_ssl_close_notify( &ssl );
 
 	exit:
+
 	mbedtls_net_free( &server_fd );
 	mbedtls_x509_crt_free( &cert );
 	mbedtls_ssl_free( &ssl );
 	mbedtls_ssl_config_free( &conf );
 	mbedtls_ctr_drbg_free( &ctr_drbg );
-	mbedtls_entropy_free( &entropy );
+//	mbedtls_entropy_free( &entropy );  // this has to be disabled otherwise seeding will fail during second round (something to do with re-seeding in another function or hardware RNG?)
 
 	if ((ret < 0) && (ret != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY))
 	{
-		Error_Handler();
+
+		printf("\nERROR occured here :((((((\n");
+		osDelay(1000);
+		// Error_Handler();
 	}
 	else
 	{
@@ -306,16 +304,8 @@ static void send_SSL_email(void)
 	}
 }
 
-
-//from forum - solution for some other issues (not here) .....
-//__DMB();
-//__DSB();
-
-
-static void send_SSL_email_data(void)
+static void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody)
 {
-	//char buffer[1000];
-
 	char send_buffer[200];
 	int send_len = 0;
 
@@ -327,29 +317,25 @@ static void send_SSL_email_data(void)
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
+	unsigned char emailLoginBase64[EMAIL_LOGIN_BASE64_BUF_SIZE];
+	unsigned char emailPasswordBase64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
+	unsigned int bytes_written;
 
-//	unsigned char email_login_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE] = "bob200506@gmail.com";
-//	unsigned char email_password_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE] = "Bob12345";
-//	unsigned char email_login_base64[EMAIL_LOGIN_BASE64_BUF_SIZE];
-//	unsigned char email_password_base64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
-
-
-
-	mbedtls_base64_encode(email_login_base64, EMAIL_LOGIN_BASE64_BUF_SIZE, &bytes_written, email_login_ASCII, strlen((char*)email_login_ASCII));
-	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", email_login_base64); 			// login in base64 format required
+	mbedtls_base64_encode(emailLoginBase64, EMAIL_LOGIN_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)email.emailLogin_ASCII, strlen((char*)email.emailLogin_ASCII)); // login ASCII to base64
+	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", emailLoginBase64);
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	mbedtls_base64_encode(email_password_base64, EMAIL_PASSWORD_BASE64_BUF_SIZE, &bytes_written, email_password_ASCII, strlen((char*)email_password_ASCII));
-	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", email_password_base64);						// password in base64 format required
+	mbedtls_base64_encode(emailPasswordBase64, EMAIL_PASSWORD_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)email.emailPassword_ASCII, strlen((char*)email.emailPassword_ASCII)); // password ASCII to base64
+	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", emailPasswordBase64);
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "MAIL FROM: <bob200506@gmail.com>\r\n");
+	snprintf(send_buffer, sizeof(send_buffer), "MAIL FROM: <%s>\r\n", email.emailLogin_ASCII); // in case when sender email = sender login
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "RCPT To: <zasi@poczta.onet.pl>\r\n");
+	snprintf(send_buffer, sizeof(send_buffer), "RCPT To: <%s>\r\n", recipient);
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
@@ -357,19 +343,19 @@ static void send_SSL_email_data(void)
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "From: zdzichu@gmail.com\r\n"); // can be any name, probably not all mail providers will display it
+	snprintf(send_buffer, sizeof(send_buffer), "From: Test Monitor 1\r\n"); // can be any name
 	send_len = strlen(send_buffer);
 	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "To: zasi@poczta.onet.pl\r\n"); // can be any name
+	snprintf(send_buffer, sizeof(send_buffer), "To: CPI_Engineer\r\n"); // can be any name, probably not all mail providers will display it
 	send_len = strlen(send_buffer);
 	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "Subject: Important email :)\r\n\r\n");
+	snprintf(send_buffer, sizeof(send_buffer), "Subject: %s\r\n\r\n", emailSubject);
 	send_len = strlen(send_buffer);
 	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "Body Hello and Regards\r\n");
+	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", emailBody);
 	send_len = strlen(send_buffer);
 	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
 
@@ -384,8 +370,6 @@ static void send_SSL_email_data(void)
 
 static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len )
 {
-	printf("Test1\n");
-
 	int ret;
 	unsigned char data[128]; // bigger size = less looping ?
 	char code[4];
@@ -400,8 +384,6 @@ static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *
 			return -1;
 		}
 	}
-
-	printf("Message written:  %s\n", buf);
 
 	do
 	{

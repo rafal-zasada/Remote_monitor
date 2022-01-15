@@ -30,7 +30,7 @@
 #include "diagnostic_tools.h"
 #include "web_server.h"
 #include "SSL_email.h"
-
+#include "stdio.h"
 
 
 
@@ -155,12 +155,16 @@ void StartDefaultTask(void const * argument)
 	SSL_email_init();
 
 
+//	float test1 = 1234.123456789;
 
 	/* Infinite loop */
 	for(;;)
 	{
-		osDelay(500);
+		osDelay(200);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+
+
+	//	printf("Test float = %f\n", test1);
 	}
 
   /* USER CODE END StartDefaultTask */
