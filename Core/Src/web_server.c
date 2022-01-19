@@ -13,20 +13,20 @@
 #include "lwip.h"
 
 extern UART_HandleTypeDef huart3;
-static void WebServerThread(void *arg);
+static void web_server_task(void *arg);
 static void http_server_serve(struct netconn *conn);
 static void send_monitor_data(struct netconn *conn);
-static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen);
+static void read_POST(struct netconn *conn, char *buf, uint16_t buflen);
 static void send_all_settings(struct netconn *conn);
 
 // !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!!
 
 void WebServerInit(void)
 {
-	sys_thread_new("myHTTP", WebServerThread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // function related to LwIP
+	sys_thread_new("myHTTP", web_server_task, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal); // function related to LwIP
 }
 
-static void WebServerThread(void *arg)
+static void web_server_task(void *arg)
 {
 
 	printf("\nWebserver started\n");
@@ -78,8 +78,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 			// print whole input buffer
 
 			HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
-//			snprintf(GUI_buffer, buflen + 7, "111%s999", buf);		// will not work properly because buf is not NULL terminated - can't copy properly to %s
-			// debug end
 
 			if((buflen >= 5) && (strncmp(buf, "GET /", 5) == 0)) // Is this an HTTP GET command? (only check the first 5 chars, since there are other formats for GET, and we're keeping it very simple. Rest of the header is ignored )
 			{
@@ -134,11 +132,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 					Integer_to_IP(gnetif.ip_addr.addr, host_IP_string);
 					strcat(response, host_IP_string); // both strings have to be NULL terminated
 					netconn_write(conn, response, strlen(response), NETCONN_NOCOPY);
-
-				//	HAL_UART_Transmit(&huart3, "\n STM32 response \n", 18, 200);
-				//	HAL_UART_Transmit(&huart3, (unsigned char*)response, strlen(response) + 1, 200);
-				//	HAL_UART_Transmit(&huart3, "\n\n", 2, 200);
-
 				}
 
 				else if(strncmp((char const *)buf,"GET /get_all_settings", 21) == 0)
@@ -161,7 +154,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 			if((buflen >= 6) && (strncmp(buf, "POST /", 6) == 0)) // check if it is HTTP POST request
 				{
-					respond_to_POST(conn, buf, buflen);
+					read_POST(conn, buf, buflen);
 				}
 		}
 	}
@@ -171,11 +164,11 @@ static void http_server_serve(struct netconn *conn) // new connection service
 }
 
 
-int CH1_setting = 3;
-int CH2_setting = 4;
-int CH3_setting = 5;
-int Relay1_setting = 1;  // relay setting = its value
-int Relay2_setting = 0;  // relay setting = its value
+extern int CH1_setting;
+extern int CH2_setting;
+extern int CH3_setting;
+extern int Relay1_setting;
+extern int Relay2_setting;
 
 static void send_all_settings(struct netconn *conn)
 {
@@ -198,7 +191,7 @@ static void send_all_settings(struct netconn *conn)
 
 }
 
-static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
+static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 {
 	char *messagePointer = strstr(buf, "\r\n\r\n"); // find end of the header
 
@@ -215,7 +208,7 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			strncpy(receivedMessage, messagePointer, receivedMessageLength);
 			receivedMessage[receivedMessageLength] = 0;							// terminate string
 
-			// Data format for communication with server (settings only)
+			// Data format for reading setting sent by client (settings only)
 			// First 3 characters - parameter
 			// Forth character - space
 			// Fifth, sixth, seventh character - value
@@ -232,10 +225,6 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			HAL_UART_Transmit(&huart3, (uint8_t*)"\nParameter value =", 18, 100);
 			HAL_UART_Transmit(&huart3, (uint8_t*)parameter_value, 3, 100);
 			HAL_UART_Transmit(&huart3, (uint8_t*)"\n", 1, 100);
-
-
-//			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\n\nConverted value = %d\n\n", setting_value);
-//			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
 			if(strncmp(parameter, "CH1", 3) == 0)
 				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
@@ -260,13 +249,11 @@ static void respond_to_POST(struct netconn *conn, char *buf, uint16_t buflen)
 	}
 }
 
-
-int voltage1 = 233;
-int voltage2 = 223;
-int voltage3 = 255;
-int temperature1 = 40;
-int temperature2 = 30;
-
+extern float voltage1;
+extern float voltage2;
+extern float voltage3;
+extern float temperature1;
+extern float temperature2;
 
 void send_monitor_data(struct netconn *conn)
 {
@@ -279,16 +266,14 @@ void send_monitor_data(struct netconn *conn)
 
 	char JSON_data[350] = {0};
 
-	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%d\","
-											"\"voltage2\" : \"%d\","
-											"\"voltage3\" : \"%d\","
-											"\"temperature1\" : \"%d\","
-											"\"temperature2\" : \"%d\","
+	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%f\","
+											"\"voltage2\" : \"%f\","
+											"\"voltage3\" : \"%f\","
+											"\"temperature1\" : \"%.1f\","
+											"\"temperature2\" : \"%.1f\","
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\""
 											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, Relay1_setting, Relay2_setting);
-
-
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);

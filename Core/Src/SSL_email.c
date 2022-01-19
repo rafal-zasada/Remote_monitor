@@ -116,7 +116,6 @@ static void send_SSL_email_thread(void *argument)
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
 			send_SSL_email("zasi@poczta.onet.pl", "Nowy subject gg", "Email body \n tresc email");
-			osDelay(1000);  // to avoid bouncing (not really necessary since send_SSL_email takes considerable time to execute)
 		}
 		osDelay(100);
 	}
