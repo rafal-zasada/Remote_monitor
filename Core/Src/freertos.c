@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include <development_aid.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
@@ -27,10 +28,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "diagnostic_tools.h"
 #include "web_server.h"
 #include "SSL_email.h"
 #include "stdio.h"
+#include "application_core.h"
 
 
 
@@ -145,6 +146,8 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN StartDefaultTask */
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+
+	app_core_init();
 
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 

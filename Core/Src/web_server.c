@@ -8,9 +8,10 @@
 #include "web_server.h"
 #include "api.h"
 #include "lwip/apps/fs.h"
-#include "diagnostic_tools.h"
+#include "development_aid.h"
 #include "string.h"
 #include "lwip.h"
+#include "application_core.h"
 
 extern UART_HandleTypeDef huart3;
 static void web_server_task(void *arg);
@@ -19,7 +20,11 @@ static void send_monitor_data(struct netconn *conn);
 static void read_POST(struct netconn *conn, char *buf, uint16_t buflen);
 static void send_all_settings(struct netconn *conn);
 
+
+
 // !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!!
+
+
 
 void WebServerInit(void)
 {
@@ -76,8 +81,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 			// debug start
 			// print whole input buffer
-
-			HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
+			// HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
 
 			if((buflen >= 5) && (strncmp(buf, "GET /", 5) == 0)) // Is this an HTTP GET command? (only check the first 5 chars, since there are other formats for GET, and we're keeping it very simple. Rest of the header is ignored )
 			{
@@ -155,6 +159,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 			if((buflen >= 6) && (strncmp(buf, "POST /", 6) == 0)) // check if it is HTTP POST request
 				{
 					read_POST(conn, buf, buflen);
+					 HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
 				}
 		}
 	}
@@ -200,18 +205,37 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 		messagePointer += 4; // skip 2 new line characters and point to POST body
 
 		u32_t receivedMessageLength = buflen - (messagePointer - buf); 		// subtract header length from the length of whole message
-		#define bufferSize 30
+		#define bufferSize 15
 		char receivedMessage[bufferSize];
 
-		if(!(receivedMessageLength >= bufferSize - 1)) 						// avoid buffer overflow
+
+
+		if(!(receivedMessageLength >= bufferSize - 1)) 						// check for buffer overflow
 		{
 			strncpy(receivedMessage, messagePointer, receivedMessageLength);
 			receivedMessage[receivedMessageLength] = 0;							// terminate string
 
+			printf("\n webserver POST: %s\n", receivedMessage);
+
+			settingsMailDataType *newSettingsPtr; // normally created in a thread before infinite loop but this should be OK.
+
+			newSettingsPtr = osMailCAlloc(mailSettingsHandle, osWaitForever); // alloc in sender, free in receiver
+			strncpy(newSettingsPtr->mailString, receivedMessage, bufferSize);
+
+			printf("\nString from mail struct = %s\n", newSettingsPtr->mailString);
+
+			if(osMailPut(mailSettingsHandle, newSettingsPtr) != osOK)
+				printf("Error while sending mail\n");
+
+
+
+		//	osMailPut(mailSettingsHandle, 0mmm);
+
+
 			// Data format for reading setting sent by client (settings only)
 			// First 3 characters - parameter
 			// Forth character - space
-			// Fifth, sixth, seventh character - value
+			// Fifth, sixth, seventh character - parameter value
 
 			char parameter[4] = {0};
 			char parameter_value[4] ={0};
@@ -220,11 +244,6 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			strncpy(parameter, receivedMessage, 3);
 			strncpy(parameter_value, receivedMessage + 4, 3);
 
-			HAL_UART_Transmit(&huart3, (uint8_t*)"\nParameter =", 12, 100);
-			HAL_UART_Transmit(&huart3, (uint8_t*)parameter, 3, 100);
-			HAL_UART_Transmit(&huart3, (uint8_t*)"\nParameter value =", 18, 100);
-			HAL_UART_Transmit(&huart3, (uint8_t*)parameter_value, 3, 100);
-			HAL_UART_Transmit(&huart3, (uint8_t*)"\n", 1, 100);
 
 			if(strncmp(parameter, "CH1", 3) == 0)
 				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
@@ -241,7 +260,7 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 			char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
 								//	"Content-Type: text/html\r\n"			// do I need this in this response?
 									"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
-									"\r\n";									// second\r\n mandatory to mark end of header!
+									"\r\n";									// second\r\n mandatory to mark end of the header!
 
 			strcat(serverResponse, receivedMessage);
 			netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
@@ -249,11 +268,11 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 	}
 }
 
-extern float voltage1;
-extern float voltage2;
-extern float voltage3;
-extern float temperature1;
-extern float temperature2;
+extern char voltage1_str[];
+extern char voltage2_str[];
+extern char voltage3_str[];
+extern char temperature1_str[];
+extern char temperature2_str[];
 
 void send_monitor_data(struct netconn *conn)
 {
@@ -266,14 +285,15 @@ void send_monitor_data(struct netconn *conn)
 
 	char JSON_data[350] = {0};
 
-	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%f\","
-											"\"voltage2\" : \"%f\","
-											"\"voltage3\" : \"%f\","
-											"\"temperature1\" : \"%.1f\","
-											"\"temperature2\" : \"%.1f\","
+
+	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%s\","
+											"\"voltage2\" : \"%s\","
+											"\"voltage3\" : \"%s\","
+											"\"temperature1\" : \"%s\","
+											"\"temperature2\" : \"%s\","
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\""
-											"}", ++voltage1, --voltage2, ++voltage3, ++temperature1, ++temperature2, Relay1_setting, Relay2_setting);
+											"}", voltage1_str, voltage2_str, voltage3_str, temperature1_str, temperature2_str, Relay1_setting, Relay2_setting);
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);

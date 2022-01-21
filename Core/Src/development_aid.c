@@ -1,11 +1,11 @@
 /*
- * diagnostic_tools.c
+ * development_aid.c
  *
  *  Created on: Nov 12, 2021
  *      Author: Rafal
  */
 
-#include "diagnostic_tools.h"
+#include <development_aid.h>
 #include "cmsis_os.h"
 #include "lwip.h"  // e.g. for struct netif data type
 
@@ -81,7 +81,6 @@ void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 	snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "Overflow detected in: %s\n", pcTaskName);
 	HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 	while(1);
-	osDelay(1000);
 }
 
 //  Sum of all defined (used?) stack can't be more than configTOTAL_HEAP_SIZE!
