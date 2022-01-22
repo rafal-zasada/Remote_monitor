@@ -1,4 +1,0 @@
-web_server.c:29:6:WebServerInit	16	static
-web_server.c:304:6:Integer_to_IP	24	static
-web_server.c:65:13:http_server_serve	736	static
-web_server.c:34:13:web_server_task	16	static
