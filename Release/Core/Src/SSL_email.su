@@ -1,0 +1,6 @@
+SSL_email.c:428:12:write_SLL_data.constprop	16	static
+SSL_email.c:370:12:write_SSL_and_get_response.constprop	160	static
+SSL_email.c:306:13:send_SSL_email_data	440	static
+SSL_email.c:92:6:SSL_email_init	16	static
+SSL_email.c:124:6:send_SSL_email	48	static
+SSL_email.c:109:13:send_SSL_email_thread	8	static

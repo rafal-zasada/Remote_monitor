@@ -20,11 +20,7 @@ static void send_monitor_data(struct netconn *conn);
 static void read_POST(struct netconn *conn, char *buf, uint16_t buflen);
 static void send_all_settings(struct netconn *conn);
 
-
-
-// !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!!
-
-
+// !!! fsdata_custom.c must contain 404.html page otherwise application will crash regardless whether 404 is called or not !!! (Due to else statement ?)
 
 void WebServerInit(void)
 {
@@ -52,6 +48,9 @@ static void web_server_task(void *arg)
 			{
 				accept_err = netconn_accept(conn, &newconn);	// accept any incoming connection
 
+				if(accept_err != ERR_OK)
+				printf("1 Error = %d\n", accept_err);;
+
 				if(accept_err == ERR_OK)
 				{
 					http_server_serve(newconn);		// serve connection
@@ -71,7 +70,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 	struct fs_file file;
 
 	recv_err = netconn_recv(conn, &inbuf); // Read the data from the port, blocking if nothing yet there. We assume the request (the part we care about) is in one netbuf
-
 	if(recv_err == ERR_OK)
 	{
 		if(netconn_err(conn) == ERR_OK)
@@ -85,7 +83,12 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 			if((buflen >= 5) && (strncmp(buf, "GET /", 5) == 0)) // Is this an HTTP GET command? (only check the first 5 chars, since there are other formats for GET, and we're keeping it very simple. Rest of the header is ignored )
 			{
-				if(strncmp((char const *)buf,"GET /js/main.js",15) == 0) // Check if request to get ST.gif
+				if(strncmp((char const *)buf,"GET /data1", 10) == 0)
+				{
+					send_monitor_data(conn);
+				}
+
+				else if(strncmp((char const *)buf,"GET /js/main.js",15) == 0) // Check if request to get ST.gif
 				{
 					fs_open(&file, "/js/main.js");
 					netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
@@ -122,7 +125,7 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 				else if(strncmp((char const *)buf,"GET /get_host_IP", 16) == 0)
 				{
-					osDelay(300); // to test javascript asynchronicity and other things ***********************************************
+			//		osDelay(300); // to test javascript asynchronicity and other things ***********************************************
 
 					char host_IP_string[17] = {0};
 					extern struct netif gnetif;
@@ -143,11 +146,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 					send_all_settings(conn);
 				}
 
-				else if(strncmp((char const *)buf,"GET /data1", 10) == 0)
-				{
-					send_monitor_data(conn);
-				}
-
 				else
 				{
 					fs_open(&file, "/404.html");
@@ -157,10 +155,10 @@ static void http_server_serve(struct netconn *conn) // new connection service
 			}
 
 			if((buflen >= 6) && (strncmp(buf, "POST /", 6) == 0)) // check if it is HTTP POST request
-				{
-					read_POST(conn, buf, buflen);
-					 HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
-				}
+			{
+				read_POST(conn, buf, buflen);
+				//	 HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
+			}
 		}
 	}
 
@@ -179,7 +177,7 @@ static void send_all_settings(struct netconn *conn)
 {
 	char Message[300];
 
-	HAL_UART_Transmit(&huart3, (char unsigned*)"\n\nSend all settings triggered on server\n\n", 19, 200);
+	HAL_UART_Transmit(&huart3, (char unsigned*)"\nSend all settings triggered on server\n", 40, 200);
 
 	snprintf(Message, sizeof(Message), 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"
@@ -204,67 +202,38 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 	{
 		messagePointer += 4; // skip 2 new line characters and point to POST body
 
-		u32_t receivedMessageLength = buflen - (messagePointer - buf); 		// subtract header length from the length of whole message
-		#define bufferSize 15
-		char receivedMessage[bufferSize];
+		// maximum expected length of the message (i.e. POST body) = 7 (string without \0 termination)
+		#define BUFFER_SIZE 8
+		char receivedMessage[BUFFER_SIZE] = {0};	// for nul termination of received string
+		u32_t receivedMessageLength = buflen - (messagePointer - buf);
 
-
-
-		if(!(receivedMessageLength >= bufferSize - 1)) 						// check for buffer overflow
+	//	printf("\n Received message length is - %lu\n", receivedMessageLength);
+		if(receivedMessageLength > BUFFER_SIZE - 1)
 		{
-			strncpy(receivedMessage, messagePointer, receivedMessageLength);
-			receivedMessage[receivedMessageLength] = 0;							// terminate string
-
-			printf("\n webserver POST: %s\n", receivedMessage);
-
-			settingsMailDataType *newSettingsPtr; // normally created in a thread before infinite loop but this should be OK.
-
-			newSettingsPtr = osMailCAlloc(mailSettingsHandle, osWaitForever); // alloc in sender, free in receiver
-			strncpy(newSettingsPtr->mailString, receivedMessage, bufferSize);
-
-			printf("\nString from mail struct = %s\n", newSettingsPtr->mailString);
-
-			if(osMailPut(mailSettingsHandle, newSettingsPtr) != osOK)
-				printf("Error while sending mail\n");
-
-
-
-		//	osMailPut(mailSettingsHandle, 0mmm);
-
-
-			// Data format for reading setting sent by client (settings only)
-			// First 3 characters - parameter
-			// Forth character - space
-			// Fifth, sixth, seventh character - parameter value
-
-			char parameter[4] = {0};
-			char parameter_value[4] ={0};
-			char *dummy_ptr;
-
-			strncpy(parameter, receivedMessage, 3);
-			strncpy(parameter_value, receivedMessage + 4, 3);
-
-
-			if(strncmp(parameter, "CH1", 3) == 0)
-				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
-			if(strncmp(parameter, "CH2", 3) == 0)
-				CH2_setting = strtol(parameter_value, &dummy_ptr, 10);
-			if(strncmp(parameter, "CH3", 3) == 0)
-				CH3_setting = strtol(parameter_value, &dummy_ptr, 10);
-			if(strncmp(parameter, "Re1", 3) == 0)
-				Relay1_setting = strtol(parameter_value, &dummy_ptr, 10);
-			if(strncmp(parameter, "Re2", 3) == 0)
-				Relay2_setting = strtol(parameter_value, &dummy_ptr, 10);
-
-
-			char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
-								//	"Content-Type: text/html\r\n"			// do I need this in this response?
-									"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
-									"\r\n";									// second\r\n mandatory to mark end of the header!
-
-			strcat(serverResponse, receivedMessage);
-			netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
+			printf("Received message too long\n");
+			return;
 		}
+
+		settingsMailDataType *newSettingsPtr; // Mail message data type variable (to be alloc'ed). Normally created in a thread before infinite loop but this should be OK.
+
+		printf("Just before osMailCAlloc\n");
+		newSettingsPtr = osMailCAlloc(mailSettingsHandle, osWaitForever); 	// alloc in sender, free in receiver (here calloc used for zero init)
+		printf("Just after osMailCAlloc\n");
+
+		strncpy(receivedMessage, messagePointer, receivedMessageLength);
+		strncpy(newSettingsPtr->mailString, receivedMessage, receivedMessageLength + 1);	// copy received message to mail data structure including \0
+
+		if(osMailPut(mailSettingsHandle, newSettingsPtr) != osOK)
+			printf("Error while sending mail\n");;
+
+		char serverResponse[100] = 	"HTTP/1.1 200 OK\r\n"
+							//	"Content-Type: text/html\r\n"			// do I need this in this response?
+								"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients (when request address and webserver address don't match)
+								"\r\n";									// second\r\n mandatory to mark end of the header!
+
+		strcat(serverResponse, receivedMessage); // header and received POST body string
+		netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
+
 	}
 }
 

@@ -18,6 +18,10 @@ osMailQId mailSettingsHandle;
 void application_core_task(void const *argument);
 void monitor_data_to_string(void);
 
+// Data format for reading setting sent by client (settings only)
+// First 3 characters - parameter
+// Forth character - space
+// Fifth, sixth, seventh character - parameter value
 int CH1_setting = 3;
 int CH2_setting = 4;
 int CH3_setting = 5;
@@ -130,3 +134,19 @@ void monitor_data_to_string(void)
 	snprintf(temperature1_str, 6, "%0.1f", temperature1);
 	snprintf(temperature2_str, 6, "%0.1f", temperature2);
 }
+
+
+
+
+
+//			if(strncmp(parameter, "CH1", 3) == 0)
+//				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
+//			if(strncmp(parameter, "CH2", 3) == 0)
+//				CH2_setting = strtol(parameter_value, &dummy_ptr, 10);
+//			if(strncmp(parameter, "CH3", 3) == 0)
+//				CH3_setting = strtol(parameter_value, &dummy_ptr, 10);
+//			if(strncmp(parameter, "Re1", 3) == 0)
+//				Relay1_setting = strtol(parameter_value, &dummy_ptr, 10);
+//			if(strncmp(parameter, "Re2", 3) == 0)
+//				Relay2_setting = strtol(parameter_value, &dummy_ptr, 10);
+

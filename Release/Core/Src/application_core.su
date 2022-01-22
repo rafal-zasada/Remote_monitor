@@ -1,0 +1,3 @@
+application_core.c:40:6:app_core_init	48	static
+application_core.c:78:6:monitor_data_to_string	24	static
+application_core.c:46:6:application_core_task	72	static

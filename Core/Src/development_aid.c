@@ -36,6 +36,7 @@ void GUI_UART_Task(void const *argument)
 			// print freeRTOS statistics
 			// shows the state of each task, including the task's stack high water mark (the smaller the high water mark number the closer the task has come to
 			// overflowing its stack). Results are in words! Set configUSE_TRACE_FACILITY 1 and configUSE_STATS_FORMATTING_FUNCTIONS 1 to use this function.
+			// (Task  State   Prio    Stack    Num)
 			osThreadList((unsigned char*)GUI_buffer);
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer - 1, strlen(GUI_buffer) + 1, 200);
 

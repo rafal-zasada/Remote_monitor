@@ -182,7 +182,7 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 		{
 			mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
 //			printf("Failed to connect on this occasion\n");
-			osDelay(250);
+			osDelay(500);
 		}
 
 		if(count == 5)

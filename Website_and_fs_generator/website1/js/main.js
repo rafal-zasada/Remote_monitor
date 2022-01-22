@@ -80,7 +80,7 @@ function getAllChannelSettings() {
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
 let getVoltagesLoopCount = 1;
-let DataReadingInterval = setInterval(getMonitorReadingsLoop, 250);
+let DataReadingInterval = setInterval(getMonitorReadingsLoop, 150);
 
 function getMonitorReadingsLoop() {
     if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
@@ -91,9 +91,9 @@ function getMonitorReadingsLoop() {
 
     //  console.log(getVoltagesLoopCount);
 
-    if (getVoltagesLoopCount > 1150) {
-        clearInterval(DataReadingInterval); 
-    }
+    // if (getVoltagesLoopCount > 1150) {
+    //     clearInterval(DataReadingInterval); 
+    // }
 }
 
 request_getMonitorReadings.onload = function () {
