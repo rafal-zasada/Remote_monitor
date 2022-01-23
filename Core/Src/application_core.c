@@ -10,11 +10,14 @@
 
 #include "cmsis_os.h"
 #include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
 #include "application_core.h"
 
 osThreadId ApplicationCoreTaskHandle;
 osMailQId mailSettingsHandle;
 
+static void receive_settings_mail_and_parse(void);
 void application_core_task(void const *argument);
 void monitor_data_to_string(void);
 
@@ -34,12 +37,7 @@ float voltage3 = -4.5;		// ADC3
 float temperature1 = -15.3;	//
 float temperature2 = -17.7;
 
-char voltage1_str[9] = "init";		// e.g. -99.8 V or 123 mV or -1.23 mV
-char voltage2_str[9] = "init";
-char voltage3_str[9] = "init";
-char temperature1_str[6] = "init";	// e.g. 23.4 or -83.4 or 123.4
-char temperature2_str[6] = "init";
-
+monitorValuesType monitorValues;
 
 void app_core_init(void)
 {
@@ -51,10 +49,6 @@ void application_core_task(void const *argument)
 {
 	osMailQDef(mailSettings, 1, settingsMailDataType);			// Normally created in sender thread. What if other task tries to send to this queue when it has been not initialised yet?
 	mailSettingsHandle = osMailCreate(osMailQ(mailSettings), NULL);
-
-
-	osEvent mailData;
-	settingsMailDataType *newSettingsReceivedPtr;
 
 	while(1)
 	{
@@ -68,14 +62,9 @@ void application_core_task(void const *argument)
 		osDelay(500);
 
 
-		mailData = osMailGet(mailSettingsHandle, 0);
+		receive_settings_mail_and_parse();
 
-		if(mailData.status == osEventMail)
-		{
-			newSettingsReceivedPtr = mailData.value.p;
-			printf("\nQueue receiver = %s\n", newSettingsReceivedPtr->mailString);
-			osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
-		}
+
 	}
 }
 
@@ -83,58 +72,113 @@ void monitor_data_to_string(void)
 {
 	// voltage1 to string
 	if(voltage1 < 0 && voltage1 > -1)
-		snprintf(voltage1_str, 9, "%0.2f mV", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f mV", voltage1);
 	else if(voltage1 <= -1 && voltage1 > -10)
-		snprintf(voltage1_str, 9, "%0.2f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 <= -10)
-		snprintf(voltage1_str, 9, "%0.1f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.1f V", voltage1);
 	else if(voltage1 < 1 && voltage1 >= 0)
-		snprintf(voltage1_str, 9, "%0.2f mV", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f mV", voltage1);
 	else if(voltage1 >= 1 && voltage1 < 10)
-		snprintf(voltage1_str, 9, "%0.2f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 >= 10)
-		snprintf(voltage1_str, 9, "%0.1f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.1f V", voltage1);
 	else
-		snprintf(voltage1_str, 9, "0.00 V");	// 0
+		snprintf(monitorValues.voltage1_str, 9, "0.00 V");	// 0
 
 	// voltage2 float to string
 	if(voltage2 < 0 && voltage2 > -1)
-		snprintf(voltage2_str, 9, "%0.2f mV", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f mV", voltage2);
 	else if(voltage2 <= -1 && voltage2 > -10)
-		snprintf(voltage2_str, 9, "%0.2f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 <= -10)
-		snprintf(voltage2_str, 9, "%0.1f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.1f V", voltage2);
 	else if(voltage2 < 1 && voltage2 >= 0)
-		snprintf(voltage2_str, 9, "%0.2f mV", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f mV", voltage2);
 	else if(voltage2 >= 1 && voltage2 < 10)
-		snprintf(voltage2_str, 9, "%0.2f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 >= 10)
-		snprintf(voltage2_str, 9, "%0.1f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.1f V", voltage2);
 	else
-		snprintf(voltage2_str, 9, "0.00 V");	// 0
+		snprintf(monitorValues.voltage2_str, 9, "0.00 V");	// 0
 
 	// voltag31 to string
 	if(voltage3 < 0 && voltage3 > -1)
-		snprintf(voltage3_str, 9, "%0.2f mV", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f mV", voltage3);
 	else if(voltage3 <= -1 && voltage3 > -10)
-		snprintf(voltage3_str, 9, "%0.2f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 <= -10)
-		snprintf(voltage3_str, 9, "%0.1f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.1f V", voltage3);
 	else if(voltage3 < 1 && voltage3 >= 0)
-		snprintf(voltage3_str, 9, "%0.2f mV", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f mV", voltage3);
 	else if(voltage3 >= 1 && voltage3 < 10)
-		snprintf(voltage3_str, 9, "%0.2f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 >= 10)
-		snprintf(voltage3_str, 9, "%0.1f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.1f V", voltage3);
 	else
-		snprintf(voltage3_str, 9, "0.00 V");	// 0
+		snprintf(monitorValues.voltage3_str, 9, "0.00 V");	// 0
 	;	// avoid copiler warning
 
 	// temperature floats to strings
-	snprintf(temperature1_str, 6, "%0.1f", temperature1);
-	snprintf(temperature2_str, 6, "%0.1f", temperature2);
+	snprintf(monitorValues.temperature1_str, 6, "%0.1f", temperature1);
+	snprintf(monitorValues.temperature2_str, 6, "%0.1f", temperature2);
 }
 
+static void receive_settings_mail_and_parse(void)
+{
+	osEvent mailData;
+	settingsMailDataType *newSettingsReceivedPtr;
+
+	mailData = osMailGet(mailSettingsHandle, 0);
+
+	if(mailData.status == osEventMail)
+	{
+		newSettingsReceivedPtr = mailData.value.p;
+		printf("\nQueue receiver = %s\n", newSettingsReceivedPtr->mailString);
+
+		char *p = newSettingsReceivedPtr->mailString;
+		p = p + 4; // this is where setting number is supposed to start for CH1, CH2, CH3
+
+		if(strncmp(newSettingsReceivedPtr->mailString, "CH1", 3) == 0)
+		{
+			CH1_setting = strtol(p, NULL, 10);
+		}
+
+		else if(strncmp(newSettingsReceivedPtr->mailString, "CH2", 3) == 0)
+		{
+			CH2_setting = strtol(p, NULL, 10);
+		}
+
+		if(strncmp(newSettingsReceivedPtr->mailString, "CH3", 3) == 0)
+		{
+
+			CH3_setting = strtol(p, NULL, 10);
+		}
+
+
+
+
+		if(strncmp(newSettingsReceivedPtr->mailString, "Re1", 3) == 0)
+		{
+
+			Relay1_setting = strtol(p, NULL, 10);
+		}
+
+		if(strncmp(newSettingsReceivedPtr->mailString, "Re2", 3) == 0)
+		{
+
+			Relay2_setting = strtol(p, NULL, 10);
+		}
+
+
+
+
+
+
+		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
+	}
+
+}
 
 
 

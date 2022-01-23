@@ -47,8 +47,6 @@ static void web_server_task(void *arg)
 			while(1)
 			{
 				accept_err = netconn_accept(conn, &newconn);	// accept any incoming connection
-
-				if(accept_err != ERR_OK)
 				printf("1 Error = %d\n", accept_err);;
 
 				if(accept_err == ERR_OK)
@@ -216,9 +214,7 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 
 		settingsMailDataType *newSettingsPtr; // Mail message data type variable (to be alloc'ed). Normally created in a thread before infinite loop but this should be OK.
 
-		printf("Just before osMailCAlloc\n");
 		newSettingsPtr = osMailCAlloc(mailSettingsHandle, osWaitForever); 	// alloc in sender, free in receiver (here calloc used for zero init)
-		printf("Just after osMailCAlloc\n");
 
 		strncpy(receivedMessage, messagePointer, receivedMessageLength);
 		strncpy(newSettingsPtr->mailString, receivedMessage, receivedMessageLength + 1);	// copy received message to mail data structure including \0
@@ -237,14 +233,16 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 	}
 }
 
-extern char voltage1_str[];
-extern char voltage2_str[];
-extern char voltage3_str[];
-extern char temperature1_str[];
-extern char temperature2_str[];
+//extern char voltage1_str[];
+//extern char voltage2_str[];
+//extern char voltage3_str[];
+//extern char temperature1_str[];
+//extern char temperature2_str[];
 
 void send_monitor_data(struct netconn *conn)
 {
+	extern monitorValuesType monitorValues;
+
 	char response[300] = 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"
 										"Access-Control-Allow-Origin:* \r\n" 	// allow access for other clients than from within this webserver
@@ -262,7 +260,7 @@ void send_monitor_data(struct netconn *conn)
 											"\"temperature2\" : \"%s\","
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\""
-											"}", voltage1_str, voltage2_str, voltage3_str, temperature1_str, temperature2_str, Relay1_setting, Relay2_setting);
+											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, Relay1_setting, Relay2_setting);
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);
