@@ -229,7 +229,6 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 
 		strcat(serverResponse, receivedMessage); // header and received POST body string
 		netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
-
 	}
 }
 

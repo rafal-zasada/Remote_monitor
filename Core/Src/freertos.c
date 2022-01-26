@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include <development_aid.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
@@ -32,6 +31,7 @@
 #include "SSL_email.h"
 #include "stdio.h"
 #include "application_core.h"
+#include "development_aid.h"
 
 
 

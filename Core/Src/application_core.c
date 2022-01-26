@@ -13,10 +13,12 @@
 #include "string.h"
 #include "stdlib.h"
 #include "application_core.h"
+#include "adc.h"
 
 osThreadId ApplicationCoreTaskHandle;
 osMailQId mailSettingsHandle;
 
+static void read_monitor_values(void);
 static void receive_settings_mail_and_parse(void);
 void application_core_task(void const *argument);
 void monitor_data_to_string(void);
@@ -52,19 +54,10 @@ void application_core_task(void const *argument)
 
 	while(1)
 	{
+		osDelay(50);
 		monitor_data_to_string();
-
-		voltage1 = voltage1 + 0.01;
-		voltage2 = voltage2 + 0.05;
-		voltage3 = voltage3 + 0.05;
-		temperature1 = temperature1 + 1.4;
-		temperature2 = temperature2 - 1.4;
-		osDelay(500);
-
-
 		receive_settings_mail_and_parse();
-
-
+		read_monitor_values();
 	}
 }
 
@@ -133,7 +126,8 @@ static void receive_settings_mail_and_parse(void)
 
 	if(mailData.status == osEventMail)
 	{
-		newSettingsReceivedPtr = mailData.value.p;
+		newSettingsReceivedPtr = mailData.value.p;	// memory alloc'd in sender will have to be free'd here in receiver
+
 		printf("\nQueue receiver = %s\n", newSettingsReceivedPtr->mailString);
 
 		char *p = newSettingsReceivedPtr->mailString;
@@ -151,46 +145,73 @@ static void receive_settings_mail_and_parse(void)
 
 		if(strncmp(newSettingsReceivedPtr->mailString, "CH3", 3) == 0)
 		{
-
 			CH3_setting = strtol(p, NULL, 10);
 		}
 
-
-
-
 		if(strncmp(newSettingsReceivedPtr->mailString, "Re1", 3) == 0)
 		{
-
 			Relay1_setting = strtol(p, NULL, 10);
 		}
 
 		if(strncmp(newSettingsReceivedPtr->mailString, "Re2", 3) == 0)
 		{
-
 			Relay2_setting = strtol(p, NULL, 10);
 		}
 
-
-
-
-
-
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
 	}
+}
+
+static void read_monitor_values(void)
+{
+	// it is not a problem to block and wait here because there is no need to send very fast updates to a http client
+
+
+//	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_0, GPIO_PIN_SET);		// test execution time
+
+	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
+
+	HAL_ADC_Start(&hadc1); // has to execute every time since we are not in continuous mode (but some things can be remove from HAL inside)
+
+	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
+
+	int test1 = HAL_ADC_PollForConversion(&hadc1, 20);
+
+	GPIOG->BSRR = GPIO_PIN_0;		// set pin, 3 clock cycles
+
+	int dummy = 0 ;
+	dummy = dummy * 3;
+	dummy = dummy + 4;
+
+	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
+
+ //   GPIOG->BSRR = 0b10000000000000000;	// reset pin 0
+
+
+
+	printf("Poll result = %d", test1);
+
+	if(test1 == HAL_OK)	// wait for conversion result 20ms (to be adjusted)
+	{
+		int voltage1_raw = HAL_ADC_GetValue(&hadc1);
+		voltage1 = voltage1_raw;
+	}
+	else
+	{
+		voltage1 = 111;
+	}
+
+
+//	voltage1 = vol
+
+//	voltage1 = voltage1 + 0.01;
+	voltage2 = voltage2 + 0.05;
+	voltage3 = voltage3 + 0.05;
+	temperature1 = temperature1 + 1.4;
+	temperature2 = temperature2 - 1.4;
+
 
 }
 
 
-
-
-//			if(strncmp(parameter, "CH1", 3) == 0)
-//				CH1_setting = strtol(parameter_value, &dummy_ptr, 10);
-//			if(strncmp(parameter, "CH2", 3) == 0)
-//				CH2_setting = strtol(parameter_value, &dummy_ptr, 10);
-//			if(strncmp(parameter, "CH3", 3) == 0)
-//				CH3_setting = strtol(parameter_value, &dummy_ptr, 10);
-//			if(strncmp(parameter, "Re1", 3) == 0)
-//				Relay1_setting = strtol(parameter_value, &dummy_ptr, 10);
-//			if(strncmp(parameter, "Re2", 3) == 0)
-//				Relay2_setting = strtol(parameter_value, &dummy_ptr, 10);
 
