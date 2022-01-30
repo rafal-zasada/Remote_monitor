@@ -155,7 +155,7 @@ void StartDefaultTask(void const * argument)
 
 	DiagnosticToolsInit();
 	WebServerInit();
-	SSL_email_init();
+//	SSL_email_init();		// temporary disable email
 
 
 //	float test1 = 1234.123456789;

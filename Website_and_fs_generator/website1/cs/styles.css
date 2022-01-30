@@ -8,7 +8,9 @@
     /* flex-wrap: wrap; */
     justify-content: space-around;
     padding: 2px;
-    min-width: 400px;
+    /* min-width: 400px;
+    max-width: 420px; */
+    width: 410px;
 }
 
 .logo {
@@ -45,14 +47,21 @@
 
 .channel_setting {
     border: 2px solid rgb(168, 171, 192);
-    padding: 5px;
+    /* padding: 5px; */
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     /* font-weight: bold; */
     font-size: 23px;
     white-space: nowrap;
 
+    background-color: white;
+    padding: 0px;
+    width: 127px;
+
 }
+
+
+
 
 .read_table {
     border-collapse: collapse;
@@ -63,6 +72,8 @@ td, th {
     padding: 8px;
     /* border: -40px; */
     /* margin: 0px; */
+    /* font-weight: bold; */
+
     
 }
 
@@ -86,14 +97,32 @@ td, th {
 .table_settings {
     text-align: center;
 
-    /* width: 120px;
-    min-width: 120px; */
+     width: 145px;
+    /* min-width: 120px;  */
 }
 
-.channel_setting {
-    background-color: white;
+
+.pulse_delay_table {
+    font-size: 23px;
+    color: rgb(52, 60, 131);
+    font-family: Arial, Helvetica, sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+
     padding: 0px;
-    width: 227px;
 }
 
+.pulse_delay_table_cell {
+    border: none;
+}
 
+.delay_setting {
+    border: 2px solid rgb(168, 171, 192);
+    /* width: 83px; */
+    color: rgb(52, 60, 131);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 23px;
+    background-color: white;
+
+
+}

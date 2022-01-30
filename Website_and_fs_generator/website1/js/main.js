@@ -228,6 +228,26 @@ function SettingsChangeRelay2(value)
 }
 
 
+function SettingsChangeDelay(value)
+{   
+    let valueTemp = document.getElementById('delay_setting').value;
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('delay_setting').value = -9; // blank select field by changing to non existent element 
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+    request_postInstruction.send("DEL " + value);
+
+    request_postInstruction.onload = function()
+    {
+        if("DEL " + value == request_postInstruction.responseText) {
+            document.getElementById('delay_setting').value = valueTemp; // restore select field
+            console.log("Setting confirmed!");
+        } 
+    }
+}
+
+
+
 
 let inactivityWatchdog = function() {
     window.addEventListener('blur', setTimer);

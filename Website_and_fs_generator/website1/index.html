@@ -33,17 +33,8 @@
           <td class="table_reading" id="CH1_voltage">awaiting</td>
           <td class="table_settings">        
                 <select class="channel_setting" id="CH1_setting"  onchange= "SettingsChangeCH1(this.value);">
-                <option value='-1'>ADC free run</option>
-                <option value='1'>ADC 1us after trig.</option>
-                <option value='2'>ADC 2us after trig.</option>
-                <option value='3'>ADC 3us after trig.</option>
-                <option value='4'>ADC 4us after trig.</option>
-                <option value='5'>ADC 5us after trig.</option>
-                <option value='9'>ADC 9us after trig.</option>
-                <option value='19'>ADC 19us after trig.</option>
-                <option value='29'>ADC 29us after trig.</option>
-                <option value='39'>ADC 39us after trig.</option>
-                <option value='49'>ADC 49us after trig.</option>
+                  <option value='0'>DC</option>
+                  <option value='1'>Pulse</option>
             </select>            
           </td>
         </tr>
@@ -53,17 +44,8 @@
           <td class="table_reading" id="CH2_voltage">awaiting</td>
           <td class="table_settings">
             <select class="channel_setting" id="CH2_setting" onchange="SettingsChangeCH2(this.value);">
-                <option value='-1'>ADC free run</option>
-                <option value='1'>ADC 1us after trig.</option>
-                <option value='2'>ADC 2us after trig.</option>
-                <option value='3'>ADC 3us after trig.</option>
-                <option value='4'>ADC 4us after trig.</option>
-                <option value='5'>ADC 5us after trig.</option>
-                <option value='9'>ADC 9us after trig.</option>
-                <option value='19'>ADC 19us after trig.</option>
-                <option value='29'>ADC 29us after trig.</option>
-                <option value='39'>ADC 39us after trig.</option>
-                <option value='49'>ADC 49us after trig.</option>
+              <option value='0'>DC</option>
+              <option value='1'>Pulse</option>
               </select>               
           </td>
         </tr>
@@ -73,18 +55,8 @@
           <td class="table_reading" id="CH3_voltage">awaiting</td>
           <td class="table_settings">              
             <select class="channel_setting" id="CH3_setting" onchange="SettingsChangeCH3(this.value);">
-                <option value='-1'>ADC free run</option>
-                <option value='1'>ADC 1us after trig.</option>
-                <option value='2'>ADC 2us after trig.</option>
-                <option value='3'>ADC 3us after trig.</option>
-                <option value='4'>ADC 4us after trig.</option>
-                <option value='5'>ADC 5us after trig.</option>
-                <option value='9'>ADC 9us after trig.</option>
-                <option value='19'>ADC 19us after trig.</option>
-                <option value='29'>ADC 29us after trig.</option>
-                <option value='39'>ADC 39us after trig.</option>
-                <option value='49'>ADC 49us after trig.</option>
-
+              <option value='0'>DC</option>
+              <option value='1'>Pulse</option>
             </select> 
           </td>
         </tr>
@@ -125,9 +97,50 @@
         </tr>
       </table>
 
+
+
+      <!-- <th style="text-align: center;">Reading</th> -->
+
+      <table class="pulse_delay_table">
+        <tr>
+          <td class="pulse_delay_table_cell"> Delay for pulse measurement</td>
+          <td class="pulse_delay_table_cell">
+            <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
+              <option value='1'>1 us</option>
+              <option value='2'>2 us</option>
+              <option value='3'>3 us</option>
+              <option value='4'>4 us</option>
+              <option value='5'>5 us</option>
+              <option value='10'>10 us</option>
+              <option value='15'>15 us</option>
+            </select>   
+          </td>
+        </tr>
+
+
+
+
+
+
+
+
+
+<!-- <div class="pulse_delay">Measurement delay (pulse only)
+    <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
+      <option value='1'>1 us</option>
+      <option value='2'>2 us</option>
+      <option value='3'>3 us</option>
+      <option value='4'>4 us</option>
+      <option value='5'>5 us</option>
+      <option value='10'>10 us</option>
+      <option value='15'>15 us</option>
+    </select>   
+</div> -->
+
+
     <script src="js/main.js"></script>
 
-<a href="http://127.0.0.1:5500/index.html" download >Download this file</a>
+<!-- <a href="http://127.0.0.1:5500/index.html" download >Download this file</a> -->
 
 </body>
 </html>

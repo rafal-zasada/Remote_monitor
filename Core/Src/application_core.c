@@ -14,26 +14,27 @@
 #include "application_core.h"
 #include "adc.h"
 
-osThreadId ApplicationCoreTaskHandle;
-osMailQId mailSettingsHandle;
-
 static void read_monitor_values(void);
 static void receive_settings_mail_and_parse(void);
 void application_core_task(void const *argument);
 void monitor_data_to_string(void);
 
+extern TIM_HandleTypeDef htim9;
+
+osThreadId ApplicationCoreTaskHandle;
+osMailQId mailSettingsHandle;
+
 // Data format for reading setting sent by client (settings only)
 // First 3 characters - parameter
 // Forth character - space
 // Fifth, sixth, seventh character - parameter value
-
-#define ADC_FREE_RUN -1
-
-int CH1_setting = 3;
-int CH2_setting = 4;
-int CH3_setting = 5;
+#define ADC_FREE_RUN 0
+int CH1_setting = 0;
+int CH2_setting = 1;
+int CH3_setting = 0;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
+int pulseMeasurementDelay = 1;
 
 int voltage1_raw;
 int voltage2_raw;
@@ -43,7 +44,6 @@ float voltage2 = -3.44;		// ADC2
 float voltage3 = -4.5;		// ADC3
 float temperature1 = -15.3;
 float temperature2 = -17.7;
-
 monitorValuesType monitorValues;
 
 void app_core_init(void)
@@ -60,6 +60,8 @@ void application_core_task(void const *argument)
 	HAL_ADC_Start(&hadc1); // start ADC (in trigger mode (software ACD trigger in ISR for GPIO_EXTI) it will be started again but this one includes all checks for proper operation of ADC)
 	HAL_ADC_Start(&hadc2);
 	HAL_ADC_Start(&hadc3);
+
+	HAL_TIM_Base_Start(&htim9);	// for delay of pulse measurement
 
 	while(1)
 	{
@@ -167,13 +169,19 @@ static void receive_settings_mail_and_parse(void)
 			Relay2_setting = strtol(p, NULL, 10);
 		}
 
+		if(strncmp(newSettingsReceivedPtr->mailString, "DEL", 3) == 0)
+		{
+			pulseMeasurementDelay = strtol(p, NULL, 10);
+		}
+
+
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
 	}
 }
 
 static void read_monitor_values(void)
 {
-	if(CH1_setting == -1)	// ADC in free run mode
+	if(CH1_setting == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc1);
 
@@ -187,7 +195,7 @@ static void read_monitor_values(void)
 		// voltage1_raw will be updated by interrupt
 	}
 
-	if(CH2_setting == -1)	// ADC in free run mode
+	if(CH2_setting == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc2);
 
@@ -201,7 +209,7 @@ static void read_monitor_values(void)
 		// voltage1_raw will be updated by interrupt
 	}
 
-	if(CH3_setting == -1)	// ADC in free run mode
+	if(CH3_setting == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc3);
 
@@ -236,7 +244,39 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC); // Clear regular group conversion flag
 
 
+	// interrupt used only for pulse measurements (ADC triggered by external signal)
 
+	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
+
+	uint16_t timerValue = pulseMeasurementDelay * 217 - 114;
+
+
+	TIM9->ARR = timerValue;		// set timer auto reload value
+	TIM9->CNT &= 0xFFFF0000;	// reset counter to 0
+	TIM9->SR &= !TIM_SR_UIF;	// clear update interrupt flag
+	while(!(TIM9->SR && TIM_SR_UIF));	// wait for update interrupt flag
+
+
+	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
+
+
+
+	 // HAL_TIM
+
+//	  int pulseMeasurementDelayAdjusted;          // set value is integer but float is needed for delay adjustment
+//
+//	  if(pulseMeasurementDelay == 1)
+//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 6;
+//	  else if(pulseMeasurementDelay == 2)
+//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 15;
+//	  else
+//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 25;
+//
+//
+//	  for(int i = 0; i < (pulseMeasurementDelayAdjusted); i++);		// pulse measurement delay implementation (216MHz clock)
+
+
+//	  printf("pulseMeasurementDelayAdjusted = %d\n", pulseMeasurementDelayAdjusted);
 
 	// start conversion
 	if(CH1_setting != ADC_FREE_RUN)

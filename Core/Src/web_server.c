@@ -47,7 +47,7 @@ static void web_server_task(void *arg)
 			while(1)
 			{
 				accept_err = netconn_accept(conn, &newconn);	// accept any incoming connection
-				printf("1 Error = %d\n", accept_err);;
+		//		printf("1 Error = %d\n", accept_err);;
 
 				if(accept_err == ERR_OK)
 				{
