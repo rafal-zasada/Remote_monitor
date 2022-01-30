@@ -5,8 +5,7 @@
  *      Author: Rafal
  */
 
-//  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 200);
-//  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+// This file is handling client GUI settings and displayed values
 
 #include "cmsis_os.h"
 #include "stdio.h"
@@ -27,16 +26,22 @@ void monitor_data_to_string(void);
 // First 3 characters - parameter
 // Forth character - space
 // Fifth, sixth, seventh character - parameter value
+
+#define ADC_FREE_RUN -1
+
 int CH1_setting = 3;
 int CH2_setting = 4;
 int CH3_setting = 5;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
 
-float voltage1 = -0.922;		// ADC1
+int voltage1_raw;
+int voltage2_raw;
+int voltage3_raw;
+float voltage1 = -0.922;	// ADC1
 float voltage2 = -3.44;		// ADC2
 float voltage3 = -4.5;		// ADC3
-float temperature1 = -15.3;	//
+float temperature1 = -15.3;
 float temperature2 = -17.7;
 
 monitorValuesType monitorValues;
@@ -51,6 +56,10 @@ void application_core_task(void const *argument)
 {
 	osMailQDef(mailSettings, 1, settingsMailDataType);			// Normally created in sender thread. What if other task tries to send to this queue when it has been not initialised yet?
 	mailSettingsHandle = osMailCreate(osMailQ(mailSettings), NULL);
+
+	HAL_ADC_Start(&hadc1); // start ADC (in trigger mode (software ACD trigger in ISR for GPIO_EXTI) it will be started again but this one includes all checks for proper operation of ADC)
+	HAL_ADC_Start(&hadc2);
+	HAL_ADC_Start(&hadc3);
 
 	while(1)
 	{
@@ -164,54 +173,106 @@ static void receive_settings_mail_and_parse(void)
 
 static void read_monitor_values(void)
 {
-	// it is not a problem to block and wait here because there is no need to send very fast updates to a http client
-
-
-//	HAL_GPIO_WritePin(GPIOG, GPIO_PIN_0, GPIO_PIN_SET);		// test execution time
-
-	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
-
-	HAL_ADC_Start(&hadc1); // has to execute every time since we are not in continuous mode (but some things can be remove from HAL inside)
-
-	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
-
-	int test1 = HAL_ADC_PollForConversion(&hadc1, 20);
-
-	GPIOG->BSRR = GPIO_PIN_0;		// set pin, 3 clock cycles
-
-	int dummy = 0 ;
-	dummy = dummy * 3;
-	dummy = dummy + 4;
-
-	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
-
- //   GPIOG->BSRR = 0b10000000000000000;	// reset pin 0
-
-
-
-	printf("Poll result = %d", test1);
-
-	if(test1 == HAL_OK)	// wait for conversion result 20ms (to be adjusted)
+	if(CH1_setting == -1)	// ADC in free run mode
 	{
-		int voltage1_raw = HAL_ADC_GetValue(&hadc1);
-		voltage1 = voltage1_raw;
+		HAL_ADC_Start(&hadc1);
+
+		if(HAL_ADC_PollForConversion(&hadc1, 20) == 0)
+		{
+			voltage1_raw = HAL_ADC_GetValue(&hadc1);
+		}
 	}
 	else
 	{
-		voltage1 = 111;
+		// voltage1_raw will be updated by interrupt
+	}
+
+	if(CH2_setting == -1)	// ADC in free run mode
+	{
+		HAL_ADC_Start(&hadc2);
+
+		if(HAL_ADC_PollForConversion(&hadc2, 20) == 0)
+		{
+			voltage2_raw = HAL_ADC_GetValue(&hadc2);
+		}
+	}
+	else
+	{
+		// voltage1_raw will be updated by interrupt
+	}
+
+	if(CH3_setting == -1)	// ADC in free run mode
+	{
+		HAL_ADC_Start(&hadc3);
+
+		if(HAL_ADC_PollForConversion(&hadc3, 20) == 0)
+		{
+			voltage3_raw = HAL_ADC_GetValue(&hadc3);
+		}
+	}
+	else
+	{
+		// voltage1_raw will be updated by interrupt
 	}
 
 
-//	voltage1 = vol
+	// for test
+	voltage1 = voltage1_raw;
+	voltage2 = voltage2_raw;
+	voltage3 = voltage3_raw;
 
-//	voltage1 = voltage1 + 0.01;
-	voltage2 = voltage2 + 0.05;
-	voltage3 = voltage3 + 0.05;
-	temperature1 = temperature1 + 1.4;
-	temperature2 = temperature2 - 1.4;
 
+	// read temperatures here
 
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+//	  // minimal version for ADC operation extracted from HAL_ADC_Start(&hadc1) and HAL_ADC_PollForConversion(&hadc1, 2000) (HAL_ADC_Start() must run once before)
+//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR); 	  // Clear regular group conversion flag and overrun flag (To ensure of no unknown state from potential previous ADC operations)
+//	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART; 	  // Enable the selected ADC software conversion for regular group
+//	  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));		 // Check End of conversion flag  (wait indefinitely)
+//	  voltage1_raw = HAL_ADC_GetValue(&hadc1);
+//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC); // Clear regular group conversion flag
 
+
+
+
+	// start conversion
+	if(CH1_setting != ADC_FREE_RUN)
+	{
+	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR);
+	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+	}
+	if(CH2_setting != ADC_FREE_RUN)
+	{
+		  __HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_EOC | ADC_FLAG_OVR);
+		  (&hadc2)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+	}
+	if(CH3_setting != ADC_FREE_RUN)
+	{
+		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_EOC | ADC_FLAG_OVR);
+		  (&hadc3)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+	}
+
+	// wait for EOC flag and read value
+	if(CH1_setting != ADC_FREE_RUN)
+	{
+		  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));
+		  voltage1_raw = HAL_ADC_GetValue(&hadc1);
+		  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC);
+	}
+	if(CH2_setting != ADC_FREE_RUN)
+	{
+		  while(!(__HAL_ADC_GET_FLAG((&hadc2), ADC_FLAG_EOC)));
+		  voltage2_raw = HAL_ADC_GetValue(&hadc2);
+		  __HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_STRT | ADC_FLAG_EOC);
+	}
+	if(CH3_setting != ADC_FREE_RUN)
+	{
+		  while(!(__HAL_ADC_GET_FLAG((&hadc3), ADC_FLAG_EOC)));
+		  voltage3_raw = HAL_ADC_GetValue(&hadc3);
+		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_STRT | ADC_FLAG_EOC);
+	}
+}
 
