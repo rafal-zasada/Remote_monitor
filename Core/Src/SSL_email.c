@@ -66,14 +66,15 @@ osThreadId send_SSL_emailTaskHandle;
 #define EMAIL_LOGIN_BASE64_BUF_SIZE 100
 #define EMAIL_PASSWORD_BASE64_BUF_SIZE 100
 
-struct emailData
+struct emailDataSender
 {
 	char serverPort[5];
 	char serverName[30];
 	char emailLogin_ASCII[EMAIL_LOGIN_ASCII_BUF_SIZE];
 	char emailPassword_ASCII[EMAIL_PASSWORD_ASCII_BUF_SIZE];
-}email;
+}emailSender;
 
+newEmailType newEmail;
 
 // already created in mbedtls.c
 extern mbedtls_ssl_context ssl;
@@ -82,9 +83,8 @@ extern mbedtls_x509_crt cert;
 extern mbedtls_ctr_drbg_context ctr_drbg;
 extern mbedtls_entropy_context entropy;
 
-void send_SSL_email(char *recipient, char *emailSubject, char *emailBody);
-
 static void send_SSL_email_thread(void *argument);
+void send_SSL_email(char *recipient, char *emailSubject, char *emailBody);
 static int write_SSL_and_get_response( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
 static int write_SLL_data( mbedtls_ssl_context *ssl, unsigned char *buf, size_t len );
 static void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody);
@@ -98,24 +98,22 @@ void SSL_email_init(void)
 	sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
 
 //	temporary hard coded here for testing:
-	strncpy(email.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
-//	email.serverPort[3] = '\0';
-	strncpy(email.serverName, "smtp.gmail.com", 15); //
-	strncpy(email.emailLogin_ASCII, "bob200506@gmail.com", 20);
-	strncpy(email.emailPassword_ASCII, "Bob12345", 9);
-
+	strncpy(emailSender.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
+	strncpy(emailSender.serverName, "smtp.gmail.com", 15); //
+	strncpy(emailSender.emailLogin_ASCII, "bob200506@gmail.com", 20);
+	strncpy(emailSender.emailPassword_ASCII, "Bob12345", 9);
 }
 
 static void send_SSL_email_thread(void *argument)
 {
 	while(1)
 	{
-		// add RTOS signal (semaphore) here to send email
+		// add RTOS signal (semaphore) here to send email  ???
 
 
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-			send_SSL_email("zasi@poczta.onet.pl", "Nowy subject gg", "Email body \n tresc email");
+			send_SSL_email(newEmail.emailReceipient, newEmail.emailSubject, newEmail.emailBody);
 		}
 		osDelay(100);
 	}
@@ -161,8 +159,6 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 
 	mbedtls_printf( " ok (%d skipped)\n", ret );
 
-
-
 	//  from forum:
 	//  Setting up local IP address and netmask could get it working. But the root cause of the ERR_RTE (Routing problem) is that the TCP/IP stack has not finished
 	//  setting up the ip/netmask/gw before netconn_connect is called. That should be a err because the ip/netmask/gw are probably empty at that time.
@@ -176,9 +172,9 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	{
 		count++;
 		printf("\nAttempt no %d\n", count);
-		mbedtls_printf( "  . Connecting to tcp/%s/%s...", email.serverName, email.serverPort);
+		mbedtls_printf( "  . Connecting to tcp/%s/%s...", emailSender.serverName, emailSender.serverPort);
 
-		if((ret = mbedtls_net_connect(&server_fd, email.serverName, email.serverPort, MBEDTLS_NET_PROTO_TCP)) != 0) // connection unsuccessful
+		if((ret = mbedtls_net_connect(&server_fd, emailSender.serverName, emailSender.serverPort, MBEDTLS_NET_PROTO_TCP)) != 0) // connection unsuccessful
 		{
 			mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
 //			printf("Failed to connect on this occasion\n");
@@ -230,7 +226,7 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, NULL, mbedtls_net_recv_timeout);	// receive timeout
 
 	//	Set the timeout period for mbedtls_ssl_read() (Default: no timeout.)
-	mbedtls_ssl_conf_read_timeout (&conf, 5000);
+	mbedtls_ssl_conf_read_timeout (&conf, 8000);
 
 
 	/*
@@ -303,7 +299,7 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	}
 }
 
-static void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody)
+void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody)
 {
 	char send_buffer[200];
 	int send_len = 0;
@@ -320,17 +316,17 @@ static void send_SSL_email_data(char *recipient, char *emailSubject, char *email
 	unsigned char emailPasswordBase64[EMAIL_PASSWORD_BASE64_BUF_SIZE];
 	unsigned int bytes_written;
 
-	mbedtls_base64_encode(emailLoginBase64, EMAIL_LOGIN_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)email.emailLogin_ASCII, strlen((char*)email.emailLogin_ASCII)); // login ASCII to base64
+	mbedtls_base64_encode(emailLoginBase64, EMAIL_LOGIN_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)emailSender.emailLogin_ASCII, strlen((char*)emailSender.emailLogin_ASCII)); // login ASCII to base64
 	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", emailLoginBase64);
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	mbedtls_base64_encode(emailPasswordBase64, EMAIL_PASSWORD_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)email.emailPassword_ASCII, strlen((char*)email.emailPassword_ASCII)); // password ASCII to base64
+	mbedtls_base64_encode(emailPasswordBase64, EMAIL_PASSWORD_BASE64_BUF_SIZE, &bytes_written, (uint8_t*)emailSender.emailPassword_ASCII, strlen((char*)emailSender.emailPassword_ASCII)); // password ASCII to base64
 	snprintf(send_buffer, sizeof(send_buffer), "%s\r\n", emailPasswordBase64);
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "MAIL FROM: <%s>\r\n", email.emailLogin_ASCII); // in case when sender email = sender login
+	snprintf(send_buffer, sizeof(send_buffer), "MAIL FROM: <%s>\r\n", emailSender.emailLogin_ASCII); // in case when sender email = sender login
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 

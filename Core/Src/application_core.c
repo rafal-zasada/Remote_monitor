@@ -13,13 +13,16 @@
 #include "stdlib.h"
 #include "application_core.h"
 #include "adc.h"
+#include "SSL_email.h"
 
+void application_core_task(void const *argument);
 static void read_monitor_values(void);
 static void receive_settings_mail_and_parse(void);
-void application_core_task(void const *argument);
-void monitor_data_to_string(void);
+static void monitor_data_to_string(void);
+static void ADC_raw_to_voltage(void);
 
 extern TIM_HandleTypeDef htim9;
+extern struct emailDAtaReceipient newEmail;
 
 osThreadId ApplicationCoreTaskHandle;
 osMailQId mailSettingsHandle;
@@ -29,9 +32,11 @@ osMailQId mailSettingsHandle;
 // Forth character - space
 // Fifth, sixth, seventh character - parameter value
 #define ADC_FREE_RUN 0
-int CH1_setting = 0;
-int CH2_setting = 1;
-int CH3_setting = 0;
+#define ADC_TRIGGERED 1
+
+int CH1_setting = ADC_FREE_RUN;
+int CH2_setting = ADC_TRIGGERED;
+int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
 int pulseMeasurementDelay = 1;
@@ -63,16 +68,31 @@ void application_core_task(void const *argument)
 
 	HAL_TIM_Base_Start(&htim9);	// for delay of pulse measurement
 
+	strncpy(newEmail.emailReceipient, "zasi@poczta.onet.pl", 40); // temporary for test
+	strncpy(newEmail.emailSubject, "Naprawde nowy email", 40); // temporary for test
+	strncpy(newEmail.emailBody, "Tresc majla, jol :)\n", 40); // temporary for test
+
 	while(1)
 	{
 		osDelay(50);
-		monitor_data_to_string();
+
 		receive_settings_mail_and_parse();
 		read_monitor_values();
+
+		if(CH1_setting == ADC_TRIGGERED || CH2_setting == ADC_TRIGGERED || CH3_setting == ADC_TRIGGERED)
+		{
+			// if trigger is connected and running then interrupt flag will be already waiting - just cycle through it once to avoid unnecessary interrupts
+			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+			HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+		}
+
+
+		ADC_raw_to_voltage();
+		monitor_data_to_string();
 	}
 }
 
-void monitor_data_to_string(void)
+static void monitor_data_to_string(void)
 {
 	// voltage1 to string
 	if(voltage1 < 0 && voltage1 > -1)
@@ -224,59 +244,45 @@ static void read_monitor_values(void)
 	}
 
 
+
+
+	// read temperatures here - to be implemented
+
+}
+
+static void ADC_raw_to_voltage(void)
+{
+	// to be implemented
+
 	// for test
 	voltage1 = voltage1_raw;
 	voltage2 = voltage2_raw;
 	voltage3 = voltage3_raw;
 
-
-	// read temperatures here
-
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 {
-//	  // minimal version for ADC operation extracted from HAL_ADC_Start(&hadc1) and HAL_ADC_PollForConversion(&hadc1, 2000) (HAL_ADC_Start() must run once before)
-//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR); 	  // Clear regular group conversion flag and overrun flag (To ensure of no unknown state from potential previous ADC operations)
-//	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART; 	  // Enable the selected ADC software conversion for regular group
-//	  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));		 // Check End of conversion flag  (wait indefinitely)
-//	  voltage1_raw = HAL_ADC_GetValue(&hadc1);
-//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC); // Clear regular group conversion flag
+//	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
 
+	printf("\nInterrupt triggered by GPIO\n");
 
-	// interrupt used only for pulse measurements (ADC triggered by external signal)
-
-	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
-
-	uint16_t timerValue = pulseMeasurementDelay * 217 - 114;
-
+	uint16_t timerValue = pulseMeasurementDelay * 217 - 110;
 
 	TIM9->ARR = timerValue;		// set timer auto reload value
 	TIM9->CNT &= 0xFFFF0000;	// reset counter to 0
 	TIM9->SR &= !TIM_SR_UIF;	// clear update interrupt flag
 	while(!(TIM9->SR && TIM_SR_UIF));	// wait for update interrupt flag
 
+//	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
 
-	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
-
-
-
-	 // HAL_TIM
-
-//	  int pulseMeasurementDelayAdjusted;          // set value is integer but float is needed for delay adjustment
-//
-//	  if(pulseMeasurementDelay == 1)
-//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 6;
-//	  else if(pulseMeasurementDelay == 2)
-//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 15;
-//	  else
-//		  pulseMeasurementDelayAdjusted = pulseMeasurementDelay * 25;
-//
-//
-//	  for(int i = 0; i < (pulseMeasurementDelayAdjusted); i++);		// pulse measurement delay implementation (216MHz clock)
-
-
-//	  printf("pulseMeasurementDelayAdjusted = %d\n", pulseMeasurementDelayAdjusted);
+	//	  // minimal version for ADC operation extracted from HAL_ADC_Start(&hadc1) and HAL_ADC_PollForConversion(&hadc1, 2000) (HAL_ADC_Start() must run once before)
+	//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR); 	  // Clear regular group conversion flag and overrun flag (To ensure of no unknown state from potential previous ADC operations)
+	//	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART; 	  // Enable the selected ADC software conversion for regular group
+	//	  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));		 // Check End of conversion flag  (wait indefinitely)
+	//	  voltage1_raw = HAL_ADC_GetValue(&hadc1);
+	//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC); // Clear regular group conversion flag
 
 	// start conversion
 	if(CH1_setting != ADC_FREE_RUN)

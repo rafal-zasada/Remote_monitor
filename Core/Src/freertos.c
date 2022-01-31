@@ -155,19 +155,13 @@ void StartDefaultTask(void const * argument)
 
 	DiagnosticToolsInit();
 	WebServerInit();
-//	SSL_email_init();		// temporary disable email
-
-
-//	float test1 = 1234.123456789;
+	SSL_email_init();
 
 	/* Infinite loop */
 	for(;;)
 	{
 		osDelay(200);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-
-
-	//	printf("Test float = %f\n", test1);
 	}
 
   /* USER CODE END StartDefaultTask */
