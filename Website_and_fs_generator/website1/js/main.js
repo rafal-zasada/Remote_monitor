@@ -25,7 +25,7 @@ function getHost_IP_Loop() {
         receivedHost_IP_string = document.location.hostname;
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
-        console.log("Test");
+        console.log("Test");    
         getAllChannelSettings();
         return; 
     }

@@ -32,6 +32,8 @@
     /* text-align: center; */
     font-family: Arial, Helvetica, sans-serif;
     white-space: nowrap;
+    font-size: 20px;
+    padding: 0px;
 }
 
 .read_table {
@@ -39,7 +41,7 @@
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     /* font-weight: bold; */
-    font-size: 23px;
+    font-size: 18px;
     white-space: nowrap;
 }
 
@@ -51,7 +53,7 @@
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     /* font-weight: bold; */
-    font-size: 23px;
+    font-size: 18px;
     white-space: nowrap;
 
     background-color: white;
@@ -102,27 +104,36 @@ td, th {
 }
 
 
-.pulse_delay_table {
-    font-size: 23px;
+.options_below_table {
+    font-size: 18px;
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     white-space: nowrap;
     overflow: hidden;
-
     padding: 0px;
 }
 
-.pulse_delay_table_cell {
+.options_below_table_cell {
     border: none;
 }
 
-.delay_setting {
+.options_setting{
     border: 2px solid rgb(168, 171, 192);
     /* width: 83px; */
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 23px;
+    font-size: 18px;
     background-color: white;
+}
 
-
+.numerical_entry1 {
+    width: 75px;
+    border: 2px solid rgb(168, 171, 192);
+    /* width: 83px; */
+    color: rgb(52, 60, 131);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    background-color: white;
+    
+    
 }

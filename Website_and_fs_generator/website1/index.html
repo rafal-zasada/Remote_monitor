@@ -1,131 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remote Monitor</title>
-    <link rel="stylesheet" href="cs/styles.css">
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Monitor</title>
+  <link rel="stylesheet" href="cs/styles.css">
 </head>
+
 <body>
-    <div class="logo_container">
-        <div class="logo">
-            <img src="pictures/TMD_logo.png" alt="TMD-logo">
-        </div>
-        <div class="logo">
-            <img src="pictures/CPI_logo.png" alt="CPI-logo"> 
-        </div>
+  <div class="logo_container">
+    <div class="logo">
+      <img src="pictures/TMD_logo.png" alt="TMD-logo">
     </div>
+    <div class="logo">
+      <img src="pictures/CPI_logo.png" alt="CPI-logo">
+    </div>
+  </div>
 
-    <br>
-    <div class="host_IP_string" id="host_IP_string"></div>
-    <H1 class="title">Remote Channels</H1>    <!-- header -->
+  <br>
+  <div class="host_IP_string" id="host_IP_string"></div>
+  <p class="title">Remote Channels</p> <!-- header -->
 
-    <table class="read_table">
-        <tr>
-          <th style="text-align: center;">Channel</th>
-          <th style="text-align: center;">Reading</th>
-          <th>Settings</th>
-        </tr>
+  <table class="read_table">
+    <tr>
+      <th>Channel</th>
+      <th>Reading</th>
+      <th>Settings</th>
+    </tr>
 
-        <tr>
-          <td class="table_channel">CH 1</td>
-          <td class="table_reading" id="CH1_voltage">awaiting</td>
-          <td class="table_settings">        
-                <select class="channel_setting" id="CH1_setting"  onchange= "SettingsChangeCH1(this.value);">
-                  <option value='0'>DC</option>
-                  <option value='1'>Pulse</option>
-            </select>            
-          </td>
-        </tr>
+    <tr>
+      <td class="table_channel">CH 1</td>
+      <td class="table_reading" id="CH1_voltage">awaiting</td>
+      <td class="table_settings">
+        <select class="channel_setting" id="CH1_setting" onchange="SettingsChangeCH1(this.value);">
+          <option value='0'>DC</option>
+          <option value='1'>Pulse</option>
+        </select>
+      </td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">CH 2</td>
-          <td class="table_reading" id="CH2_voltage">awaiting</td>
-          <td class="table_settings">
-            <select class="channel_setting" id="CH2_setting" onchange="SettingsChangeCH2(this.value);">
-              <option value='0'>DC</option>
-              <option value='1'>Pulse</option>
-              </select>               
-          </td>
-        </tr>
+    <tr>
+      <td class="table_channel">CH 2</td>
+      <td class="table_reading" id="CH2_voltage">awaiting</td>
+      <td class="table_settings">
+        <select class="channel_setting" id="CH2_setting" onchange="SettingsChangeCH2(this.value);">
+          <option value='0'>DC</option>
+          <option value='1'>Pulse</option>
+        </select>
+      </td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">CH 3</td>
-          <td class="table_reading" id="CH3_voltage">awaiting</td>
-          <td class="table_settings">              
-            <select class="channel_setting" id="CH3_setting" onchange="SettingsChangeCH3(this.value);">
-              <option value='0'>DC</option>
-              <option value='1'>Pulse</option>
-            </select> 
-          </td>
-        </tr>
+    <tr>
+      <td class="table_channel">CH 3</td>
+      <td class="table_reading" id="CH3_voltage">awaiting</td>
+      <td class="table_settings">
+        <select class="channel_setting" id="CH3_setting" onchange="SettingsChangeCH3(this.value);">
+          <option value='0'>DC</option>
+          <option value='1'>Pulse</option>
+        </select>
+      </td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">TC 1</td> 
-          <td class="table_reading" id="TC1_temp">awaiting</td>
-          <td class="table_settings"></td>
-        </tr>
+    <tr>
+      <td class="table_channel">TC 1</td>
+      <td class="table_reading" id="TC1_temp">awaiting</td>
+      <td class="table_settings"></td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">TC 2</td>
-          <td class="table_reading" id="TC2_temp">awaiting</td>
-          <td class="table_settings"></td>
-        </tr>
+    <tr>
+      <td class="table_channel">TC 2</td>
+      <td class="table_reading" id="TC2_temp">awaiting</td>
+      <td class="table_settings"></td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">Relay 1</td>
-          <td class="table_reading" id="Relay1">awaiting</td>
-          <td class="table_settings">
-            <select class="channel_setting" id="Relay1_setting" onchange="SettingsChangeRelay1(this.value);">
-                <option value='0'>Close</option>
-                <option value='1'>Open</option>
-            </select> 
+    <tr>
+      <td class="table_channel">Relay 1</td>
+      <td class="table_reading" id="Relay1">awaiting</td>
+      <td class="table_settings">
+        <select class="channel_setting" id="Relay1_setting" onchange="SettingsChangeRelay1(this.value);">
+          <option value='0'>Close</option>
+          <option value='1'>Open</option>
+        </select>
 
-          </td>
-        </tr>
+      </td>
+    </tr>
 
-        <tr>
-          <td class="table_channel">Relay 2</td>
-          <td class="table_reading" id="Relay2">awaiting</td>
-          <td class="table_settings">
-            <select class="channel_setting" id="Relay2_setting" onchange="SettingsChangeRelay2(this.value);">
-                <option value='0'>Close</option>
-                <option value='1'>Open</option>
-            </select> 
-          </td>
-        </tr>
-      </table>
-
-
-
-      <!-- <th style="text-align: center;">Reading</th> -->
-
-      <table class="pulse_delay_table">
-        <tr>
-          <td class="pulse_delay_table_cell"> Delay for pulse measurement</td>
-          <td class="pulse_delay_table_cell">
-            <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
-              <option value='1'>1 us</option>
-              <option value='2'>2 us</option>
-              <option value='3'>3 us</option>
-              <option value='4'>4 us</option>
-              <option value='5'>5 us</option>
-              <option value='10'>10 us</option>
-              <option value='15'>15 us</option>
-            </select>   
-          </td>
-        </tr>
+    <tr>
+      <td class="table_channel">Relay 2</td>
+      <td class="table_reading" id="Relay2">awaiting</td>
+      <td class="table_settings">
+        <select class="channel_setting" id="Relay2_setting" onchange="SettingsChangeRelay2(this.value);">
+          <option value='0'>Close</option>
+          <option value='1'>Open</option>
+        </select>
+      </td>
+    </tr>
+  </table>
 
 
 
+  <!-- <th style="text-align: center;">Reading</th> -->
+
+  <table class="options_below_table">
+    <tr>
+      <td class="options_below_table_cell">Pulse measurement delay after trigger</td>
+      <td class="options_below_table_cell">
+        <select class="options_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
+          <option value='1'>1 us</option>
+          <option value='2'>2 us</option>
+          <option value='3'>3 us</option>
+          <option value='4'>4 us</option>
+          <option value='5'>5 us</option>
+          <option value='10'>10 us</option>
+          <option value='15'>15 us</option>
+        </select>
+      </td>
+    </tr>
+  </table>
+<br>
+  <div class="options_below_table">&nbsp Conditional action:</div>
+  <table class="options_below_table">
+    <tr>
+      <td class="options_below_table_cell">If</td>
+      <td class="options_below_table_cell">
+        <select class="options_setting">
+          <option value="1">CH 1</option>
+          <option value="2">CH 2</option>
+          <option value="3">CH 3</option>
+          <option value="4">TC 1</option>
+          <option value="5">TC 2</option>
+        </select>
+      </td>
+
+      <td class="options_below_table_cell">is</td>
+      <td class="options_below_table_cell">
+        <select class="options_setting">
+          <option value="1">above</option>
+          <option value="2">below</option>
+        </select>
+      </td>
+      <td class="options_below_table_cell">
+        <input class="numerical_entry1" id="number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
+        type = "number"
+        maxlength = "6">
+      </td>
+      <td class="options_below_table_cell">
+        <select class="options_setting">
+          <option value="1">mV</option>
+          <option value="2">V</option>
+          <option value="3">°C</option>
+        </select>
+      </td>
+      <td class="options_below_table_cell">then</td>
+      <td class="options_below_table_cell">
+        <select class="options_setting">
+          <option value="1">Send email + open Realy 1</option>
+          <option value="2">V</option>
+          <option value="3">°C</option>
+        </select>
+      </td>
+    </tr>
+  </table>
 
 
 
 
 
 
-<!-- <div class="pulse_delay">Measurement delay (pulse only)
+
+
+
+
+  <!-- <div class="pulse_delay">Measurement delay (pulse only)
     <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
       <option value='1'>1 us</option>
       <option value='2'>2 us</option>
@@ -138,10 +186,10 @@
 </div> -->
 
 
-    <script src="js/main.js"></script>
+  <script src="js/main.js"></script>
 
-<!-- <a href="http://127.0.0.1:5500/index.html" download >Download this file</a> -->
+  <!-- <a href="http://127.0.0.1:5500/index.html" download >Download this file</a> -->
 
 </body>
-</html>
 
+</html>
