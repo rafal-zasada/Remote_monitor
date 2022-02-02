@@ -10,7 +10,7 @@
     padding: 2px;
     /* min-width: 400px;
     max-width: 420px; */
-    width: 410px;
+    width: 427px;
 }
 
 .logo {
@@ -67,6 +67,7 @@
 
 .read_table {
     border-collapse: collapse;
+    float: left;   /* float left is to allow text to be placed next to the table, otherwise it would be pushed below */
 }
 
 td, th {
@@ -109,7 +110,7 @@ td, th {
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     white-space: nowrap;
-    overflow: hidden;
+    /* overflow: hidden; */
     padding: 0px;
 }
 
@@ -133,7 +134,15 @@ td, th {
     color: rgb(52, 60, 131);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 18px;
-    background-color: white;
-    
-    
+    background-color: white;    
+}
+
+.numerical_entry2 {
+    width: 250px;
+    border: 2px solid rgb(168, 171, 192);
+    /* width: 83px; */
+    color: rgb(52, 60, 131);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    background-color: white;    
 }
