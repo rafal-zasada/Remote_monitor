@@ -104,6 +104,13 @@ td, th {
     /* min-width: 120px;  */
 }
 
+.table_note {
+    font-family: Arial, Helvetica, sans-serif;
+    color: rgb(52, 60, 131);
+    font-size: 15px;
+    /* margin-top: 50px; */
+    margin-left: 5px;
+}
 
 .options_below_table {
     font-size: 18px;
@@ -112,6 +119,8 @@ td, th {
     white-space: nowrap;
     /* overflow: hidden; */
     padding: 0px;
+    margin-top: 8px;
+    margin-bottom: 8px;
 }
 
 .options_below_table_cell {
@@ -127,7 +136,7 @@ td, th {
     background-color: white;
 }
 
-.numerical_entry1 {
+.text_or_number_field {
     width: 75px;
     border: 2px solid rgb(168, 171, 192);
     /* width: 83px; */
@@ -137,12 +146,35 @@ td, th {
     background-color: white;    
 }
 
-.numerical_entry2 {
-    width: 250px;
-    border: 2px solid rgb(168, 171, 192);
-    /* width: 83px; */
-    color: rgb(52, 60, 131);
-    font-family: Arial, Helvetica, sans-serif;
+.buttons {
     font-size: 18px;
-    background-color: white;    
+    color: #343c83;
+    border-color: #7980bb;
+    background-color: rgb(240, 240, 240);
+    font-family: Arial, Helvetica, sans-serif;
+    white-space: nowrap;
+    /* overflow: hidden; */
+    padding: 0px;
+    /* margin-top: 8px; */
+    /* margin-bottom: 8px; */
+    border-radius: 3px;
 }
+  
+  .buttons:hover {
+    background-color: rgb(228, 228, 228);
+    /* box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4); */
+    /* color: rgb(0, 0, 0); */
+    border-color: black;    
+  }
+
+  .options_setting:hover  {
+    border-color: black; 
+  }
+
+  .text_or_number_field:hover {
+    border-color: black; 
+  }
+
+  .channel_setting:hover {
+    border-color: black; 
+  }

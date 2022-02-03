@@ -23,7 +23,7 @@
   <div class="host_IP_string" id="host_IP_string"></div>
   <p style="font-weight: bold; padding-left: 110px;" class="title">Remote Channels</p> <!-- header -->
 
-  <span style="display: inline-block;">
+  <span style="display: inline-flex;">
     <table class="read_table">
       <tr>
         <th>Channel</th>
@@ -99,7 +99,16 @@
         </td>
       </tr>
     </table>
-    <span>Note: if any field becomes blank after new settings if means server did not confirmed new setting. Try again</span>
+
+<div style="margin-top: 50px;">
+    <div class="table_note">Note: if any field becomes </div>
+    <div class="table_note">blank after new settings it </div>
+    <div class="table_note">means server did not </div>
+    <div class="table_note">confirmed new setting.</div>
+    <div class="table_note">Try again.</div>
+  </div>
+
+
   </span>
 
 
@@ -131,87 +140,81 @@
   <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;">
 
 
-    <div style="font-weight: bold;" class="options_below_table">&nbsp Watchdog:</div>
-    <table class="options_below_table">
-      <tr>
-        <td class="options_below_table_cell">If</td>
-        <td class="options_below_table_cell">
-          <select class="options_setting">
-            <option value="1">CH 1</option>
-            <option value="2">CH 2</option>
-            <option value="3">CH 3</option>
-            <option value="4">TC 1</option>
-            <option value="5">TC 2</option>
-          </select>
-        </td>
+    <div style="font-weight: bold;" class="options_below_table">&nbsp New watchdog settings:</div>
 
-        <td class="options_below_table_cell">is</td>
-        <td class="options_below_table_cell">
-          <select class="options_setting">
-            <option value="1">above</option>
-            <option value="2">below</option>
-          </select>
-        </td>
-        <td class="options_below_table_cell">
-          <input class="numerical_entry1" id="threshold_value_for_action"
-            oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
-            type="number" maxlength="6">
-        </td>
-        <td class="options_below_table_cell">
-          <select class="options_setting">
-            <option value="1">mV</option>
-            <option value="2">V</option>
-            <option value="3">°C</option>
-          </select>
-        </td>
-        <td class="options_below_table_cell">then</td>
-        <td class="options_below_table_cell">
-          <select class="options_setting">
-            <option value="1">no action</option>
-            <option value="2">send email</option>
-            <option value="3">send email + open Relay 1</option>
-            <option value="4">wait 60s + open Relay 2</option>
-          </select>
-        <td class="options_below_table_cell">and</td>
-        <td class="options_below_table_cell">
-          <select class="options_setting">
-            <option value="1">no action</option>
-            <option value="2">send email</option>
-            <option value="3">send email + open Relay 1</option>
-            <option value="4">wait 60s + open Relay 2</option>
-          </select>
-        </td>
-      </tr>
-    </table>
+    <span class="options_below_table">
+      <span class="options_below_table_cell">&nbsp If &nbsp</span>
+      <select class="options_setting">
+        <option value="1">CH 1</option>
+        <option value="2">CH 2</option>
+        <option value="3">CH 3</option>
+        <option value="4">TC 1</option>
+        <option value="5">TC 2</option>
+      </select>
 
+      <span class="options_below_table_cell">&nbsp is &nbsp</span>
+      <select class="options_setting">
+        <option value="1">above</option>
+        <option value="2">below</option>
+      </select>
 
+      <span>&nbsp</span>
 
+      <input class="text_or_number_field" id="threshold_value_for_action"
+        oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
+        type="number" maxlength="6">
+
+      <select class="options_setting">
+        <option value="1">mV</option>
+        <option value="2">V</option>
+        <option value="3">°C</option>
+      </select>
+
+      <span>&nbsp then &nbsp</span>
+
+      <select class="options_setting">
+        <option value="0">no action</option>
+        <option value="1">send email</option>
+        <option value="2">open Relay 1</option>
+        <option value="3">open Relay 2</option>
+        <option value="4">close Relay 1</option>
+        <option value="5">close Relay 2</option>
+        <option value="6">send email + open Relay 1</option>
+        <option value="7">wait 60s + open Relay 2</option>
+      </select>
+
+      <span>&nbsp and &nbsp</span>
+
+      <select class="options_setting">
+        <option value="0">no action</option>
+        <option value="1">send email</option>
+        <option value="2">open Relay 1</option>
+        <option value="3">open Relay 2</option>
+        <option value="4">close Relay 1</option>
+        <option value="5">close Relay 2</option>
+        <option value="6">send email + open Relay 1</option>
+        <option value="7">wait 60s + open Relay 2</option>
+      </select>
+    </span>
 
     <div class="options_below_table">
       <span class="options_below_table_cell">&nbsp Enter email for notifications: </span>
-      <input class="numerical_entry2" style="margin-bottom: 10px;" id="email_for_notification">
-      <span class="options_below_table_cell">
-        <button type="button" class="options_below_table">&nbsp save &nbsp</button>
-
-      </span>
+      <input class="text_or_number_field" style="width: 350px;" id="email_for_notification">
+      <button type="button" class="buttons" id="test_email">&nbsp test email &nbsp</button>
     </div>
 
     <div class="options_below_table">
-      <span>&nbsp Notification will be sent to: ......................... &nbsp</span>
-      <button type="button" class="options_below_table" style="margin-bottom: 10px;">&nbsp test email &nbsp</button>
+      <span>&nbsp</span>
+      <button type="button" class="buttons">&nbsp send to server &nbsp</button>
     </div>
+    <div>&nbsp</div>
 
-    <div class="options_below_table">
-      <span>&nbsp Watchdog status:</span>
-      <span style="font-weight: bold;" id="watchdog_status">&nbsp ENABLED &nbsp</span>
-      <button type="button" class="options_below_table" id="watchdog_button">&nbsp disable &nbsp</button>
-
-    </div>
-
-
+    <div class="options_below_table" style="font-weight: bold;">&nbsp Current watchdog settings on the server:</div>
+    <span class="options_below_table">&nbsp Status: enabled &nbsp</span>
+    <button type="button" class="buttons" id="watchdog_button">&nbsp disable &nbsp</button>
+    <div class="options_below_table">&nbsp Program: IF x then y and gfsadgsfgas</div>
 
   </div>
-
 
   <!-- <div class="pulse_delay">Measurement delay (pulse only)
     <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
