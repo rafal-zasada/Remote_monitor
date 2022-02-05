@@ -46,11 +46,11 @@ int CH2_setting = ADC_TRIGGERED;
 int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
-int pulseMeasurementDelay = 1;
+int pulseMeasurementDelay = 3;
 int watchdogStatus = 1;
 int watchdogChannel = 2;
 int watchdogAboveBelow = 1;
-int watchdogThreshold = 23.4;
+float watchdogThreshold = 23.4;
 int watchdogUnits = 2;
 int watchdogAction1 = 3;
 int watchdogAction2 = 4;

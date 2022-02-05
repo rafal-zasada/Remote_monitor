@@ -131,18 +131,14 @@
   </table>
   <br>
 
-
   <!-- <p style="width: 1000px; background-color: rgb(168, 171, 192); height: 1px;"></p> -->
-
-
   <!-- <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;"> -->
 
-
     <div class="options_below_table">
-      <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog status:  </span>
+      <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog status: </span>
       <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
       <span class="options_below_table">
-        <button type="button" class="buttons" id="watchdog_on_off_button">&nbsp disable &nbsp</button>
+        <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();">&nbsp disable &nbsp</button>
       </span>
     </div>
 
@@ -169,7 +165,7 @@
         <span>&nbsp</span>
 
         <input class="text_or_number_field" id="watchdog_threshold"
-          oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
+          oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" 
           type="number" maxlength="6">
 
         <select class="options_setting" id="watchdog_units">

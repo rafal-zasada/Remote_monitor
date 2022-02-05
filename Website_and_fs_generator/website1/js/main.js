@@ -81,15 +81,15 @@ function getAllChannelSettings() {
     Setting_Relay1_DOM.value = serverDataParsed.Relay1_setting;
     Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting; 
 
-    Pulse_measurement_delay_DOM = serverDataParsed.pulse_measurement_delay;
-    Watchdog_Status_DOM = serverDataParsed.watchdogStatus;
-    Watchdog_Channel_DOM = serverDataParsed.watchdogChannel;
-    Watchdog_above_below_DEM = serverDataParsed.watchdogAboveBelow;
-    Watchdog_Threshold_DOM = serverDataParsed.watchdogThreshold;
-    Watchdog_Units_DOM = serverDataParsed.watchdogUnits;
-    Watchdog_Action1_DOM = serverDataParsed.watchdogAction1;
-    Watchdog_Action2_DOM = serverDataParsed.watchdogAction2;
-    Watchdog_Email_DOM = serverDataParsed.Email_recepient;
+    Pulse_measurement_delay_DOM.value = serverDataParsed.pulse_measurement_delay;
+    Watchdog_Status_DOM.value = serverDataParsed.watchdogStatus;
+    Watchdog_Channel_DOM.value = serverDataParsed.watchdogChannel;
+    Watchdog_above_below_DEM.value = serverDataParsed.watchdogAboveBelow;
+    Watchdog_Threshold_DOM.value = serverDataParsed.watchdogThreshold;
+    Watchdog_Units_DOM.value = serverDataParsed.watchdogUnits;
+    Watchdog_Action1_DOM.value = serverDataParsed.watchdogAction1;
+    Watchdog_Action2_DOM.value = serverDataParsed.watchdogAction2;
+    Watchdog_Email_DOM.value = serverDataParsed.Email_recepient;
     }
 }
 
@@ -100,7 +100,7 @@ function getAllChannelSettings() {
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
 let getVoltagesLoopCount = 1;
-let DataReadingInterval = setInterval(getMonitorReadingsLoop, 150);
+let DataReadingInterval = setInterval(getMonitorReadingsLoop, 500);
 
 function getMonitorReadingsLoop() {
     if(host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
@@ -231,7 +231,7 @@ function SettingsChangeRelay1(value)
 
 function SettingsChangeRelay2(value)
 {   
-    let valueTemp = document.getElementById('Relay2_setting').value;
+    let valueTemp = document.getElementById('Relay2_setting').value;  
     let request_postInstruction = new XMLHttpRequest();
 
     document.getElementById('Relay2_setting').value = -9; // blank select field by changing to non existent element 
@@ -250,7 +250,7 @@ function SettingsChangeRelay2(value)
 
 function SettingsChangeDelay(value)
 {   
-    let valueTemp = document.getElementById('delay_setting').value;
+    let valueTemp = document.getElementById('watchdog_on_off_button').value;
     let request_postInstruction = new XMLHttpRequest();
 
     document.getElementById('delay_setting').value = -9; // blank select field by changing to non existent element 
@@ -264,6 +264,66 @@ function SettingsChangeDelay(value)
             console.log("Setting confirmed!");
         } 
     }
+}
+
+
+function WatchdogEnableDisable()
+{       
+
+
+
+    // let WatchdogButtonState = document.getElementById('watchdog_on_off_button').innerText;
+    let request_postInstruction = new XMLHttpRequest();
+
+    console.log("function WatchdogEnableDisable()");
+    // console.log("text = " + WatchdogButtonState);
+
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+
+    console.log(document.getElementById('watchdog_on_off_button').innerHTML);
+    console.log(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; disable &nbsp;");
+
+    if(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; disable &nbsp;")
+    {
+        console.log("Test1");
+
+        request_postInstruction.send("WAT SET 0");
+
+        request_postInstruction.onload = function()
+        {
+            if("WAT SET 0" == request_postInstruction.responseText) {
+                document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; enable &nbsp;";
+                document.getElementById('watchdog_status_text').innerHTML = "&nbsp; DISABLED &nbsp;";
+                console.log("Setting confirmed!");
+            } 
+        }
+    }
+    else if(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; enable &nbsp;" || document.getElementById('watchdog_on_off_button').innerText == '&nbsp; re-enable &nbsp;')
+    {
+        console.log("Test2");
+
+        request_postInstruction.send("WAT SET 1");
+
+        request_postInstruction.onload = function()
+        {
+            if("WAT SET 1" == request_postInstruction.responseText) {
+                document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; disable &nbsp;"; 
+                document.getElementById('watchdog_status_text').innerHTML = "&nbsp; ENABLED &nbsp;";
+                console.log("Setting confirmed!");
+            } 
+        }
+
+
+    }
+
+
+    // request_postInstruction.onload = function()
+    // {
+    //     if("DEL " + value == request_postInstruction.responseText) {
+    //         document.getElementById('delay_setting').value = valueTemp; // restore select field
+    //         console.log("Setting confirmed!");
+    //     } 
+    // }
 }
 
 
@@ -290,53 +350,7 @@ inactivityWatchdog();
 
 
 
-// var count = 0;
-// var myInterval;
-// // Active
-// window.addEventListener('focus', startTimer);
 
-// // Inactive
-// window.addEventListener('blur', stopTimer);
-
-// function timerHandler() {
-//  count++;
-//  document.getElementById("seconds").innerHTML = count;
-// }
-
-// // Start timer
-// function startTimer() {
-//  console.log('focus');
-//  myInterval = window.setInterval(timerHandler, 1000);
-// }
-
-// // Stop timer
-// function stopTimer() {
-//  window.clearInterval(myInterval);
-// }
-
-
-
-// let inactivityTime = function () {
-//     let time;
-//     window.onload = resetTimer;             // continously runnig asynchronous funtions?
-//     document.onmousemove = resetTimer;
-//     document.onkeydown = resetTimer;
-
-//     function logout() {
-//       alert("Updates stopped due to inactivity longer than 15 minutes. Press OK to continue")
-//     }
-
-//     function resetTimer() {
-//       clearTimeout(time);
-//       time = setTimeout(logout, 4000)
-
-//         console.log("Test");
-
-
-//     }
-//   };
-
-//   inactivityTime();
 
 
 

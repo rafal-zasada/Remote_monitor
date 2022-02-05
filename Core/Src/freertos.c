@@ -147,12 +147,14 @@ void StartDefaultTask(void const * argument)
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 
-	app_core_init();
+
 
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 
 	osDelay(1000);
-//	osDelay(1);
+	osDelay(1);
+
+	app_core_init();
 
 	DiagnosticToolsInit();
 	WebServerInit();
