@@ -6,6 +6,15 @@ let Setting_CH2_DOM = document.getElementById('CH2_setting');
 let Setting_CH3_DOM = document.getElementById('CH3_setting');
 let Setting_Relay1_DOM = document.getElementById('Relay1_setting');
 let Setting_Relay2_DOM = document.getElementById('Relay2_setting');
+let Pulse_measurement_delay_DOM = document.getElementById('delay_setting');
+let Watchdog_Status_DOM = document.getElementById('watchdog_on_off_button');
+let Watchdog_Channel_DOM = document.getElementById('watchdog_channel');
+let Watchdog_above_below_DEM = document.getElementById('watchdog_above_below');
+let Watchdog_Threshold_DOM = document.getElementById('watchdog_threshold');
+let Watchdog_Units_DOM = document.getElementById('watchdog_units');
+let Watchdog_Action1_DOM = document.getElementById('watchdog_action1');
+let Watchdog_Action2_DOM = document.getElementById('watchdog_action2');
+let Watchdog_Email_DOM = document.getElementById('watchdog_email');
 
 
 
@@ -62,6 +71,7 @@ function getAllChannelSettings() {
     request_getAllChannelSetttings.send();
 
     request_getAllChannelSetttings.onload = function() {
+
     let serverDataParsed = JSON.parse(request_getAllChannelSetttings.responseText);
 
     console.log(serverDataParsed);
@@ -70,6 +80,16 @@ function getAllChannelSettings() {
     Setting_CH3_DOM.value = serverDataParsed.Ch3_setting;
     Setting_Relay1_DOM.value = serverDataParsed.Relay1_setting;
     Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting; 
+
+    Pulse_measurement_delay_DOM = serverDataParsed.pulse_measurement_delay;
+    Watchdog_Status_DOM = serverDataParsed.watchdogStatus;
+    Watchdog_Channel_DOM = serverDataParsed.watchdogChannel;
+    Watchdog_above_below_DEM = serverDataParsed.watchdogAboveBelow;
+    Watchdog_Threshold_DOM = serverDataParsed.watchdogThreshold;
+    Watchdog_Units_DOM = serverDataParsed.watchdogUnits;
+    Watchdog_Action1_DOM = serverDataParsed.watchdogAction1;
+    Watchdog_Action2_DOM = serverDataParsed.watchdogAction2;
+    Watchdog_Email_DOM = serverDataParsed.Email_recepient;
     }
 }
 
@@ -245,8 +265,6 @@ function SettingsChangeDelay(value)
         } 
     }
 }
-
-
 
 
 let inactivityWatchdog = function() {

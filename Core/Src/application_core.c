@@ -34,10 +34,12 @@ osMailQId mailSettingsHandle;
 #define ADC_FREE_RUN 0
 #define ADC_TRIGGERED 1
 
-#define WATCH_DOG_DISABLED 0
-#define WATCH_DOG_ENABLED 1
-#define WATCH_DOG_TRIGGERED 2
+#define WATCHDOG_DISABLED 0
+#define WATCHDOG_ENABLED 1
+#define WATCHDOG_TRIGGERED 2
 
+#define WATCHDOG_TRIG_FALLING_EDGE 0
+#define WATCHDOG_TRIG_RAISING_EDGE 1
 
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
@@ -45,7 +47,15 @@ int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
 int pulseMeasurementDelay = 1;
-int watchdogSetting = 0;
+int watchdogStatus = 1;
+int watchdogChannel = 2;
+int watchdogAboveBelow = 1;
+int watchdogThreshold = 23.4;
+int watchdogUnits = 2;
+int watchdogAction1 = 3;
+int watchdogAction2 = 4;
+
+
 
 int voltage1_raw;
 int voltage2_raw;
@@ -74,7 +84,7 @@ void application_core_task(void const *argument)
 
 	HAL_TIM_Base_Start(&htim9);	// for delay of pulse measurement
 
-	strncpy(newEmail.emailReceipient, "zasi@poczta.onet.pl", 40); // temporary for test
+	strncpy(newEmail.emailRecipient, "zasi@poczta.onet.pl", 40); // temporary for test
 	strncpy(newEmail.emailSubject, "Naprawde nowy email", 40); // temporary for test
 	strncpy(newEmail.emailBody, "Tresc majla, jol :)\n", 40); // temporary for test
 
@@ -166,61 +176,78 @@ static void receive_settings_mail_and_parse(void)
 
 		printf("\nQueue receiver = %s\n", newSettingsReceivedPtr->mailString);
 
-		char *p = newSettingsReceivedPtr->mailString;
-		p = p + 4; // this is where setting number is supposed to start for CH1, CH2, CH3
+		char *receivedMessagePtr = newSettingsReceivedPtr->mailString;
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "CH1", 3) == 0)
+		// message format for CH1, CH2, CH3, Re1, Re2, DEL settings:
+		// - first three letters are paramater
+		// - space
+		// - numerical value
+		// e.g.   CH1 1
+
+		if(strncmp(receivedMessagePtr, "CH1", 3) == 0)
 		{
-			CH1_setting = strtol(p, NULL, 10);
+			CH1_setting = strtol(receivedMessagePtr + 4 , NULL, 10);
 		}
 
-		else if(strncmp(newSettingsReceivedPtr->mailString, "CH2", 3) == 0)
+		else if(strncmp(receivedMessagePtr, "CH2", 3) == 0)
 		{
-			CH2_setting = strtol(p, NULL, 10);
+			CH2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "CH3", 3) == 0)
+		if(strncmp(receivedMessagePtr, "CH3", 3) == 0)
 		{
-			CH3_setting = strtol(p, NULL, 10);
+			CH3_setting = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "Re1", 3) == 0)
+		if(strncmp(receivedMessagePtr, "Re1", 3) == 0)
 		{
-			Relay1_setting = strtol(p, NULL, 10);
+			Relay1_setting = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "Re2", 3) == 0)
+		if(strncmp(receivedMessagePtr, "Re2", 3) == 0)
 		{
-			Relay2_setting = strtol(p, NULL, 10);
+			Relay2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "DEL", 3) == 0)
+		if(strncmp(receivedMessagePtr, "DEL", 3) == 0)
 		{
-			pulseMeasurementDelay = strtol(p, NULL, 10);
+			pulseMeasurementDelay = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
-		if(strncmp(newSettingsReceivedPtr->mailString, "WAT", 3) == 0)				// watchdog settings
+		// message format for watchdog settings:
+		// e.g.  WAT SET 1 means enable watchdog
+
+		if(strncmp(receivedMessagePtr, "WAT", 3) == 0)				// watchdog settings
 		{
-			if(strncmp(newSettingsReceivedPtr->mailString + 4, "STA", 3) == 0)		// disable/enable watchdog
+			if(strncmp(receivedMessagePtr + 4, "SET", 3) == 0)
 			{
-
-
+				watchdogStatus = strtol(receivedMessagePtr + 8, NULL, 10);
 			}
 
-			if(strncmp(newSettingsReceivedPtr->mailString + 4, "SET", 3) == 0)		// watchdog settings
+			if(strncmp(receivedMessagePtr + 4, "OPT", 3) == 0)		// watchdog options
 			{
+				// (0)WAT   (4)OPT   (8)0      (10)0    (12)123.44  (19)0   (21)0   (23)0     (25)zasi@poczta.onet.pl  (position in the string in brackets)
+				// watchdog options channel above/below   value     units  action1  action2         email
 
+				watchdogChannel = strtol(receivedMessagePtr + 8, NULL, 10);
+				watchdogAboveBelow = strtol(receivedMessagePtr + 10, NULL, 10);
+				watchdogThreshold = strtol(receivedMessagePtr + 12, NULL, 10);
+				watchdogUnits = strtol(receivedMessagePtr + 19, NULL, 10);
+				watchdogAction1 = strtol(receivedMessagePtr + 21, NULL, 10);
+				watchdogAction2 = strtol(receivedMessagePtr + 23, NULL, 10);
+				strncpy(newEmail.emailRecipient, receivedMessagePtr + 25, 45); // at the moment max email length set to 35
+
+				printf("watchdogChannel = %d\n", watchdogChannel);
+				printf("watchdogAboveBelow = %d\n", watchdogAboveBelow);
+				printf("watchdogThreshold = %d\n", watchdogThreshold);
+				printf("watchdogUnits = %d\n", watchdogUnits);
+				printf("watchdogAction1 = %d\n", watchdogAction1);
+				printf("watchdogAction2 = %d\n", watchdogAction1);
+				printf("newEmail.emailReceipient = %s\n", newEmail.emailRecipient);
 
 			}
-
-
-
-
+			printf("watchdogStatus = %d\n", watchdogStatus);
 		}
-
-
-
-
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
 	}
 }

@@ -113,7 +113,7 @@ static void send_SSL_email_thread(void *argument)
 
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 		{
-			send_SSL_email(newEmail.emailReceipient, newEmail.emailSubject, newEmail.emailBody);
+			send_SSL_email(newEmail.emailRecipient, newEmail.emailSubject, newEmail.emailBody);
 		}
 		osDelay(100);
 	}

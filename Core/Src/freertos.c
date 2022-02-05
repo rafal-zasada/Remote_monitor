@@ -152,6 +152,7 @@ void StartDefaultTask(void const * argument)
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 
 	osDelay(1000);
+//	osDelay(1);
 
 	DiagnosticToolsInit();
 	WebServerInit();

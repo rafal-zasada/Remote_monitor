@@ -12,7 +12,7 @@ void SSL_email_init(void);
 
 typedef struct emailDAtaReceipient
 {
-	char emailReceipient[75];
+	char emailRecipient[75];
 	char emailSubject[75];
 	char emailBody[500];
 }newEmailType;

@@ -11,7 +11,7 @@
 
 typedef struct
 {
-	char mailString[20];
+	char mailString[65];
 } settingsMailDataType;
 
 typedef struct
@@ -21,6 +21,7 @@ typedef struct
 	char voltage3_str[9];
 	char temperature1_str[7];
 	char temperature2_str[7];
+	char watchdogStatus_str[12];
 } monitorValuesType;
 
 extern osMailQId mailSettingsHandle;

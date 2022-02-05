@@ -140,9 +140,9 @@
 
     <div class="options_below_table">
       <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog status:  </span>
-      <span style="font-style: italic;">&nbsp ENABLED &nbsp</span>
+      <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
       <span class="options_below_table">
-        <button type="button" class="buttons">&nbsp disable &nbsp</button>
+        <button type="button" class="buttons" id="watchdog_on_off_button">&nbsp disable &nbsp</button>
       </span>
     </div>
 
@@ -152,7 +152,7 @@
 
       <span class="options_below_table">
         <span class="options_below_table_cell">&nbsp If &nbsp</span>
-        <select class="options_setting">
+        <select class="options_setting" id="watchdog_channel">
           <option value="1">CH 1</option>
           <option value="2">CH 2</option>
           <option value="3">CH 3</option>
@@ -161,18 +161,18 @@
         </select>
 
         <span class="options_below_table_cell">&nbsp is &nbsp</span>
-        <select class="options_setting">
+        <select class="options_setting" id="watchdog_above_below">
           <option value="1">above</option>
           <option value="2">below</option>
         </select>
 
         <span>&nbsp</span>
 
-        <input class="text_or_number_field" id="threshold_value_for_action"
+        <input class="text_or_number_field" id="watchdog_threshold"
           oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
           type="number" maxlength="6">
 
-        <select class="options_setting">
+        <select class="options_setting" id="watchdog_units">
           <option value="1">mV</option>
           <option value="2">V</option>
           <option value="3">°C</option>
@@ -180,7 +180,7 @@
 
         <span>&nbsp then &nbsp</span>
 
-        <select class="options_setting">
+        <select class="options_setting" id="watchdog_action1">
           <option value="0">no action</option>
           <option value="1">send email</option>
           <option value="2">open Relay 1</option>
@@ -193,7 +193,7 @@
 
         <span>&nbsp and &nbsp</span>
 
-        <select class="options_setting">
+        <select class="options_setting" id="watchdog_action2">
           <option value="0">no action</option>
           <option value="1">send email</option>
           <option value="2">open Relay 1</option>
@@ -207,13 +207,13 @@
 
       <div class="options_below_table">
         <span class="options_below_table_cell">&nbsp Enter email for notifications: </span>
-        <input class="text_or_number_field" style="width: 350px;" id="email_for_notification">
-        <button type="button" class="buttons" id="test_email">&nbsp test email &nbsp</button>
+        <input class="text_or_number_field" style="width: 350px;" id="watchdog_email">
+        <button type="button" class="buttons" id="test_email_button">&nbsp test email &nbsp</button>
       </div>
       <div>
         <div style="font-style: italic;" class="options_below_table">&nbsp new watchdog settings not saved</div>
         <span>&nbsp</span>
-        <button type="button" class="buttons" id="test_email">&nbsp save &nbsp</button>
+        <button type="button" class="buttons" id="save_watchdog_button">&nbsp save &nbsp</button>
 
       </div>
 

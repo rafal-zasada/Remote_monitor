@@ -12,6 +12,7 @@
 #include "string.h"
 #include "lwip.h"
 #include "application_core.h"
+#include "SSL_email.h"
 
 extern UART_HandleTypeDef huart3;
 static void web_server_task(void *arg);
@@ -170,10 +171,21 @@ extern int CH2_setting;
 extern int CH3_setting;
 extern int Relay1_setting;
 extern int Relay2_setting;
+extern int pulseMeasurementDelay;
+extern int watchdogStatus;
+extern int watchdogChannel;
+extern int watchdogAboveBelow;
+extern int watchdogThreshold;
+extern int watchdogUnits;
+extern int watchdogAction1;
+extern int watchdogAction2;
+extern struct emailDAtaReceipient newEmail;
 
 static void send_all_settings(struct netconn *conn)
 {
-	char Message[300];
+	char Message[600];
+
+
 
 	HAL_UART_Transmit(&huart3, (char unsigned*)"\nSend all settings triggered on server\n", 40, 200);
 
@@ -185,8 +197,17 @@ static void send_all_settings(struct netconn *conn)
 										"\"Ch2_setting\" : \"%d\","
 										"\"Ch3_setting\" : \"%d\","
 										"\"Relay1_setting\" : \"%d\","
-										"\"Relay2_setting\" : \"%d\""
-										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting);
+										"\"Relay2_setting\" : \"%d\","
+										"\"pulse_measurement_delay\" : \"%d\","
+										"\"watchdogStatus\" : \"%d\","
+										"\"watchdogChannel\" : \"%d\","
+										"\"watchdogAboveBelow\" : \"%d\","
+										"\"watchdogThreshold\" : \"%d\","
+										"\"watchdogUnits\" : \"%d\","
+										"\"watchdogAction1\" : \"%d\","
+										"\"watchdogAction2\" : \"%d\","
+										"\"Email_recepient\" : \"%s\""
+										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting, pulseMeasurementDelay, watchdogStatus, watchdogChannel, watchdogAboveBelow, watchdogThreshold, watchdogUnits, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
 
 	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
 
@@ -201,7 +222,7 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 		messagePointer += 4; // skip 2 new line characters and point to POST body
 
 		// maximum expected length of the message (i.e. POST body) = 7 (string without \0 termination)
-		#define BUFFER_SIZE 8
+		#define BUFFER_SIZE 70
 		char receivedMessage[BUFFER_SIZE] = {0};	// for nul termination of received string
 		u32_t receivedMessageLength = buflen - (messagePointer - buf);
 
