@@ -6,7 +6,7 @@
     border: 2px rgb(43, 102, 168) solid;
     display: flex;
     /* flex-wrap: wrap; */
-    justify-content: space-around;
+    justify-content: left;
     padding: 2px;
     /* min-width: 400px;
     max-width: 420px; */

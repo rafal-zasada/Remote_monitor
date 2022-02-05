@@ -34,12 +34,18 @@ osMailQId mailSettingsHandle;
 #define ADC_FREE_RUN 0
 #define ADC_TRIGGERED 1
 
+#define WATCH_DOG_DISABLED 0
+#define WATCH_DOG_ENABLED 1
+#define WATCH_DOG_TRIGGERED 2
+
+
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
 int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
 int pulseMeasurementDelay = 1;
+int watchdogSetting = 0;
 
 int voltage1_raw;
 int voltage2_raw;
@@ -85,7 +91,6 @@ void application_core_task(void const *argument)
 			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 			HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 		}
-
 
 		ADC_raw_to_voltage();
 		monitor_data_to_string();
@@ -153,7 +158,7 @@ static void receive_settings_mail_and_parse(void)
 	osEvent mailData;
 	settingsMailDataType *newSettingsReceivedPtr;
 
-	mailData = osMailGet(mailSettingsHandle, 0);
+	mailData = osMailGet(mailSettingsHandle, 0);	// no waiting
 
 	if(mailData.status == osEventMail)
 	{
@@ -193,6 +198,27 @@ static void receive_settings_mail_and_parse(void)
 		{
 			pulseMeasurementDelay = strtol(p, NULL, 10);
 		}
+
+		if(strncmp(newSettingsReceivedPtr->mailString, "WAT", 3) == 0)				// watchdog settings
+		{
+			if(strncmp(newSettingsReceivedPtr->mailString + 4, "STA", 3) == 0)		// disable/enable watchdog
+			{
+
+
+			}
+
+			if(strncmp(newSettingsReceivedPtr->mailString + 4, "SET", 3) == 0)		// watchdog settings
+			{
+
+
+			}
+
+
+
+
+		}
+
+
 
 
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
