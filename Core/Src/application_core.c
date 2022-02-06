@@ -242,7 +242,7 @@ static void receive_settings_mail_and_parse(void)
 				printf("watchdogThreshold = %f\n", watchdogThreshold);
 				printf("watchdogUnits = %d\n", watchdogUnits);
 				printf("watchdogAction1 = %d\n", watchdogAction1);
-				printf("watchdogAction2 = %d\n", watchdogAction1);
+				printf("watchdogAction2 = %d\n", watchdogAction2);
 				printf("newEmail.emailReceipient = %s\n", newEmail.emailRecipient);
 
 			}

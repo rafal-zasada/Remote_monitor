@@ -157,7 +157,7 @@
       </select>
 
       <span class="options_below_table_cell">&nbsp is &nbsp</span>
-      <select class="options_setting" id="watchdog_above_below">
+      <select class="options_setting" id="watchdog_above_below" onchange="WatchdogSettingsModified()">
         <option value="1">above</option>
         <option value="2">below</option>
       </select>
@@ -166,9 +166,9 @@
 
       <input class="text_or_number_field" id="watchdog_threshold"
         oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
-type="number" maxlength="6">
+type="number" maxlength="6" onchange="WatchdogSettingsModified()">
 
-      <select class="options_setting" id="watchdog_units">
+      <select class="options_setting" id="watchdog_units" onchange="WatchdogSettingsModified()">
         <option value="1">mV</option>
         <option value="2">V</option>
         <option value="3">°C</option>
@@ -176,7 +176,7 @@ type="number" maxlength="6">
 
       <span>&nbsp then &nbsp</span>
 
-      <select class="options_setting" id="watchdog_action1">
+      <select class="options_setting" id="watchdog_action1" onchange="WatchdogSettingsModified()">
         <option value="0">no action</option>
         <option value="1">send email</option>
         <option value="2">open Relay 1</option>
@@ -189,7 +189,7 @@ type="number" maxlength="6">
 
       <span>&nbsp and &nbsp</span>
 
-      <select class="options_setting" id="watchdog_action2">
+      <select class="options_setting" id="watchdog_action2" onchange="WatchdogSettingsModified()">
         <option value="0">no action</option>
         <option value="1">send email</option>
         <option value="2">open Relay 1</option>
@@ -203,8 +203,8 @@ type="number" maxlength="6">
 
     <div class="options_below_table">
       <span class="options_below_table_cell">&nbsp Enter email for notifications: </span>
-      <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45">
-      <button type="button" class="buttons" id="test_email_button">&nbsp test email &nbsp</button>
+      <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45" onchange="WatchdogSettingsModified()">
+      <button type="button" class="buttons" id="test_email_button" onclick="EmailTest()">&nbsp test email &nbsp</button>
     </div>
     <div>
       <div style="font-style: italic;" class="options_below_table" id="watchdog_new_settings_status">&nbsp settings saved</div>
