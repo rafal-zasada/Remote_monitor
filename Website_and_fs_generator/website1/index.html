@@ -105,13 +105,7 @@
       <div class="table_note">means: unconfirmed </div>
       <div class="table_note">Try again </div>
     </div>
-
-
   </span>
-
-
-
-  <!-- <th style="text-align: center;">Reading</th> -->
 
   <table class="options_below_table">
     <tr>
@@ -133,14 +127,12 @@
   <br>
   <br>
 
-  <!-- <p style="width: 1000px; background-color: rgb(168, 171, 192); height: 1px;"></p> -->
-  <!-- <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;"> -->
-
   <div class="options_below_table">
     <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog status: </span>
     <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
     <span class="options_below_table">
-      <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();">&nbsp disable &nbsp</button>
+      <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();">&nbsp disable
+        &nbsp</button>
     </span>
   </div>
 
@@ -166,7 +158,7 @@
 
       <input class="text_or_number_field" id="watchdog_threshold"
         oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
-type="number" maxlength="6" onchange="WatchdogSettingsModified()">
+        type="number" maxlength="6" onchange="WatchdogSettingsModified()">
 
       <select class="options_setting" id="watchdog_units" onchange="WatchdogSettingsModified()">
         <option value="1">mV</option>
@@ -203,47 +195,22 @@ type="number" maxlength="6" onchange="WatchdogSettingsModified()">
 
     <div class="options_below_table">
       <span class="options_below_table_cell">&nbsp Enter email for notifications: </span>
-      <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45" onchange="WatchdogSettingsModified()">
+      <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45"
+        onchange="WatchdogSettingsModified()">
       <button type="button" class="buttons" id="test_email_button" onclick="EmailTest()">&nbsp test email &nbsp</button>
     </div>
     <div>
-      <div style="font-style: italic;" class="options_below_table" id="watchdog_new_settings_status">&nbsp settings saved</div>
+      <div style="font-style: italic;" class="options_below_table" id="watchdog_new_settings_status">&nbsp settings
+        saved</div>
       <span>&nbsp</span>
-      <button type="button" class="buttons" id="save_watchdog_button" onclick="WatchdogSaveSettings()">&nbsp save &nbsp</button>
+      <button type="button" class="buttons" id="save_watchdog_button" onclick="WatchdogSaveSettings()">&nbsp save
+        &nbsp</button>
     </div>
   </div>
-
-
-  <!-- <div class="options_below_table">
-      <span>&nbsp</span>
-      <button type="button" class="buttons">&nbsp send to server &nbsp</button>
-    </div>
-    <div>&nbsp</div>
-
-    <div class="options_below_table" style="font-weight: bold;">&nbsp Current watchdog settings on the server:</div>
-    <span class="options_below_table">&nbsp Status: enabled &nbsp</span>
-    <button type="button" class="buttons" id="watchdog_button">&nbsp disable &nbsp</button>
-    <div class="options_below_table">&nbsp Program: IF x then y and gfsadgsfgas</div> -->
-
-  <!-- </div> -->
-
-  <!-- <div class="pulse_delay">Measurement delay (pulse only)
-    <select class="delay_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
-      <option value='1'>1 us</option>
-      <option value='2'>2 us</option>
-      <option value='3'>3 us</option>
-      <option value='4'>4 us</option>
-      <option value='5'>5 us</option>
-      <option value='10'>10 us</option>
-      <option value='15'>15 us</option>
-    </select>   
-</div> -->
-
 
   <script src="js/main.js"></script>
 
   <!-- <a href="http://127.0.0.1:5500/index.html" download >Download this file</a> -->
-
 </body>
 
 </html>

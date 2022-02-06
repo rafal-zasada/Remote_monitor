@@ -1,6 +1,3 @@
-
-
-
 let Setting_CH1_DOM = document.getElementById('CH1_setting');
 let Setting_CH2_DOM = document.getElementById('CH2_setting');
 let Setting_CH3_DOM = document.getElementById('CH3_setting');
@@ -15,11 +12,6 @@ let Watchdog_Units_DOM = document.getElementById('watchdog_units');
 let Watchdog_Action1_DOM = document.getElementById('watchdog_action1');
 let Watchdog_Action2_DOM = document.getElementById('watchdog_action2');
 let Watchdog_Email_DOM = document.getElementById('watchdog_email');
-
-
-
-
-// Get server IP block - begining ************************************************************************
 let getHost_IP_LoopCount = 0;
 let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500);
 let request_getHost_IP = new XMLHttpRequest();
@@ -55,13 +47,13 @@ function getHost_IP_Loop() {
     };
 }
 
+
 request_getHost_IP.onload = function () {
     let host_IP_stringDOM = document.getElementById('host_IP_string');
 
     receivedHost_IP_string = request_getHost_IP.responseText;
     host_IP_stringDOM.innerText = 'To access this website from mobile use: http://' + receivedHost_IP_string;
 }
-
 
 
 function getAllChannelSettings() {
@@ -93,32 +85,23 @@ function getAllChannelSettings() {
     }
 }
 
-// let text = "Hello world!";
-// let result = text.substring(1, 4);
-
 
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
-let getVoltagesLoopCount = 1;
-let DataReadingInterval = setInterval(getMonitorReadingsLoop, 500);
+const DataReadingInterval = setInterval(getMonitorReadingsLoop, 500);
 
 function getMonitorReadingsLoop() {
     if (host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
 
     request_getMonitorReadings.open('GET', 'http://' + receivedHost_IP_string + '/data1');
     request_getMonitorReadings.send();
-    getVoltagesLoopCount++;
-
-    //  console.log(getVoltagesLoopCount);
-
-    // if (getVoltagesLoopCount > 1150) {
-    //     clearInterval(DataReadingInterval); 
-    // }
 }
+
 
 request_getMonitorReadings.onload = function () {
     let serverDataParsed = JSON.parse(request_getMonitorReadings.responseText);
-    console.log(serverDataParsed);
+
+    // console.log(serverDataParsed);
 
     let voltage1_ReadValue = serverDataParsed.voltage1;
     let voltage2_ReadValue = serverDataParsed.voltage2;
@@ -149,10 +132,8 @@ request_getMonitorReadings.onload = function () {
     }
 }
 
-// Data format for communication with server (settings only)
-// First 3 characters - parameter
-// Forth character - space
-// Fifth, sixth, seventh character - value
+
+// for description of all options follow the code inside application_core.c on server side
 function SettingsChangeCH1(value) {
     let valueTemp = document.getElementById('CH1_setting').value;
     let request_postInstruction = new XMLHttpRequest();
@@ -306,14 +287,12 @@ function WatchdogSaveSettings() {
         WatchdogSettingsString = WatchdogSettingsString + " ";  // fill with spaces to get correct string length
     }
 
-    // console.log(WatchdogSettingsString.length);
-
     WatchdogSettingsString = WatchdogSettingsString + document.getElementById('watchdog_units').value + " " +
         document.getElementById('watchdog_action1').value + " " +
         document.getElementById('watchdog_action2').value + " " +
         document.getElementById('watchdog_email').value;
 
-        console.log(WatchdogSettingsString);
+    console.log(WatchdogSettingsString);
 
     let request_postInstruction = new XMLHttpRequest();
 
@@ -350,27 +329,35 @@ function EmailTest() {
     }
 }
 
-
-
+let aaa = 0;
 
 let inactivityWatchdog = function () {
     window.addEventListener('blur', setTimer);
     window.addEventListener('focus', resetTimer);
 
+
     let time;
 
+    console.log("active interval = " + DataReadingInterval);
+
+
     function setTimer() {
-        time = setTimeout(logout, 600000);  // 10 minutes interval
+        time = setTimeout(logout, 5000);  // 10 minutes interval
     }
 
     function resetTimer() {
         clearTimeout(time);
-    }
+        setInterval(getMonitorReadingsLoop, 1000);
 
-    function logout() {
-        alert("Updates stopped due to inactivity. Press OK to continue");
     }
 }
+
+function logout() {
+    clearInterval(DataReadingInterval);
+    setInterval(getMonitorReadingsLoop, 100000000);
+    alert("Updates stopped due to inactivity");
+}
+
 
 inactivityWatchdog();
 
