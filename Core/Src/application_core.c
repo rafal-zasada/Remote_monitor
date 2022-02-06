@@ -231,15 +231,15 @@ static void receive_settings_mail_and_parse(void)
 
 				watchdogChannel = strtol(receivedMessagePtr + 8, NULL, 10);
 				watchdogAboveBelow = strtol(receivedMessagePtr + 10, NULL, 10);
-				watchdogThreshold = strtol(receivedMessagePtr + 12, NULL, 10);
+				watchdogThreshold = strtof(receivedMessagePtr + 12, NULL);	// note: string to float
 				watchdogUnits = strtol(receivedMessagePtr + 19, NULL, 10);
 				watchdogAction1 = strtol(receivedMessagePtr + 21, NULL, 10);
 				watchdogAction2 = strtol(receivedMessagePtr + 23, NULL, 10);
-				strncpy(newEmail.emailRecipient, receivedMessagePtr + 25, 45); // at the moment max email length set to 35
+				strncpy(newEmail.emailRecipient, receivedMessagePtr + 25, 45); // at the moment max email length set to 45
 
 				printf("watchdogChannel = %d\n", watchdogChannel);
 				printf("watchdogAboveBelow = %d\n", watchdogAboveBelow);
-				printf("watchdogThreshold = %d\n", watchdogThreshold);
+				printf("watchdogThreshold = %f\n", watchdogThreshold);
 				printf("watchdogUnits = %d\n", watchdogUnits);
 				printf("watchdogAction1 = %d\n", watchdogAction1);
 				printf("watchdogAction2 = %d\n", watchdogAction1);

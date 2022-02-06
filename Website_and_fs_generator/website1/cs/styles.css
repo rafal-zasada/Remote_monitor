@@ -167,6 +167,11 @@ td, th {
     border-color: black;    
   }
 
+  .buttons:active
+  {
+    background-color: rgb(190, 190, 190);
+  }
+
   .options_setting:hover  {
     border-color: black; 
   }

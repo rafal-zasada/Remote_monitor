@@ -48,7 +48,7 @@ static void web_server_task(void *arg)
 			while(1)
 			{
 				accept_err = netconn_accept(conn, &newconn);	// accept any incoming connection
-		//		printf("1 Error = %d\n", accept_err);;
+				printf("1 Error = %d\n", accept_err);;
 
 				if(accept_err == ERR_OK)
 				{
@@ -175,7 +175,7 @@ extern int pulseMeasurementDelay;
 extern int watchdogStatus;
 extern int watchdogChannel;
 extern int watchdogAboveBelow;
-extern int watchdogThreshold;
+extern float watchdogThreshold;
 extern int watchdogUnits;
 extern int watchdogAction1;
 extern int watchdogAction2;
@@ -202,7 +202,7 @@ static void send_all_settings(struct netconn *conn)
 										"\"watchdogStatus\" : \"%d\","
 										"\"watchdogChannel\" : \"%d\","
 										"\"watchdogAboveBelow\" : \"%d\","
-										"\"watchdogThreshold\" : \"%d\","
+										"\"watchdogThreshold\" : \"%g\","	// float without trailing zeros
 										"\"watchdogUnits\" : \"%d\","
 										"\"watchdogAction1\" : \"%d\","
 										"\"watchdogAction2\" : \"%d\","

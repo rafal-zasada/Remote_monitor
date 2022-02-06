@@ -268,24 +268,16 @@ function SettingsChangeDelay(value)
 
 
 function WatchdogEnableDisable()
-{       
+{   
+console.log (document.getElementById('watchdog_on_off_button').innerHTML);
 
-
-
-    // let WatchdogButtonState = document.getElementById('watchdog_on_off_button').innerText;
     let request_postInstruction = new XMLHttpRequest();
-
-    console.log("function WatchdogEnableDisable()");
-    // console.log("text = " + WatchdogButtonState);
 
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
 
-    console.log(document.getElementById('watchdog_on_off_button').innerHTML);
-    console.log(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; disable &nbsp;");
-
     if(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; disable &nbsp;")
     {
-        console.log("Test1");
+        console.log ("Test2");
 
         request_postInstruction.send("WAT SET 0");
 
@@ -298,9 +290,9 @@ function WatchdogEnableDisable()
             } 
         }
     }
-    else if(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; enable &nbsp;" || document.getElementById('watchdog_on_off_button').innerText == '&nbsp; re-enable &nbsp;')
+    else if(document.getElementById('watchdog_on_off_button').innerHTML === "&nbsp; enable &nbsp;" || document.getElementById('watchdog_on_off_button').innerText === "&nbsp; re-enable &nbsp;")
     {
-        console.log("Test2");
+        console.log ("Test3");
 
         request_postInstruction.send("WAT SET 1");
 
@@ -312,18 +304,65 @@ function WatchdogEnableDisable()
                 console.log("Setting confirmed!");
             } 
         }
+    }
+}
 
 
+function WatchdogSettingsModified()
+{
+    document.getElementById('watchdog_new_settings_status').innerHTML = "&nbsp; new settings not saved";
+}
+
+
+function WatchdogSaveSettings()
+{
+	// (0)WAT   (4)OPT   (8)0      (10)0    (12)123.44  (19)0   (21)0   (23)0     (25)zasi@poczta.onet.pl  (position in the string in brackets)
+	// watchdog options channel above/below   value     units  action1  action2         email
+
+    let WatchdogSettingsString = "WAT OPT" + " " +
+                                 document.getElementById('watchdog_channel').value + " " +
+                                 document.getElementById('watchdog_above_below').value + " " +
+                                 document.getElementById('watchdog_threshold').value + " ";
+
+    console.log(WatchdogSettingsString);
+    console.log(WatchdogSettingsString.length);
+
+    while(WatchdogSettingsString.length < 19)  
+    {
+        WatchdogSettingsString = WatchdogSettingsString + " ";  // fill with spaces to get correct string length
     }
 
+    console.log(WatchdogSettingsString.length);
 
-    // request_postInstruction.onload = function()
-    // {
-    //     if("DEL " + value == request_postInstruction.responseText) {
-    //         document.getElementById('delay_setting').value = valueTemp; // restore select field
-    //         console.log("Setting confirmed!");
-    //     } 
-    // }
+    WatchdogSettingsString = WatchdogSettingsString + document.getElementById('watchdog_units').value + " " +
+                                                      document.getElementById('watchdog_action1').value + " " +
+                                                      document.getElementById('watchdog_action2').value + " " +
+                                                      document.getElementById('watchdog_email').value;
+
+    console.log("units value = " + document.getElementById('watchdog_units').value);                                               
+    console.log(WatchdogSettingsString);
+    console.log(WatchdogSettingsString.length);
+
+
+
+    let request_postInstruction = new XMLHttpRequest();
+
+    document.getElementById('watchdog_new_settings_status').innerHTML = "&nbsp; no confirmation from server, try to save again";
+
+    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);    
+    request_postInstruction.send(WatchdogSettingsString);
+
+    request_postInstruction.onload = function()
+    {
+
+
+        if(WatchdogSettingsString === request_postInstruction.responseText)
+        {
+            document.getElementById('watchdog_new_settings_status').innerHTML = "&nbsp; settings saved";
+
+        }
+    }
+
 }
 
 
