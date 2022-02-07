@@ -224,7 +224,7 @@ static void receive_settings_mail_and_parse(void)
 				watchdogStatus = strtol(receivedMessagePtr + 8, NULL, 10);
 			}
 
-			if(strncmp(receivedMessagePtr + 4, "OPT", 3) == 0)		// watchdog options
+			if(strncmp(receivedMessagePtr + 4, "OPT", 3) == 0)		// watchdog options - SAVE button on website pressed
 			{
 				// (0)WAT   (4)OPT   (8)0      (10)0    (12)123.44  (19)0   (21)0   (23)0     (25)zasi@poczta.onet.pl  (position in the string in brackets)
 				// watchdog options channel above/below   value     units  action1  action2         email
@@ -248,6 +248,18 @@ static void receive_settings_mail_and_parse(void)
 			}
 			printf("watchdogStatus = %d\n", watchdogStatus);
 		}
+
+		if(strncmp(receivedMessagePtr, "TES", 3) == 0)
+		{
+			extern  osThreadId send_SSL_emailTaskHandle;
+
+			strncpy(newEmail.emailRecipient, receivedMessagePtr + 4, EMAIL_RECIPIENT_MAX_LENGH);
+			strncpy(newEmail.emailSubject, "Subject of test email", EMAIL_SUBJECT_MAX_LENGH);
+			strncpy(newEmail.emailBody, "Body of test email", EMAIL_BODY_MAX_SIZE);
+
+			osSignalSet(send_SSL_emailTaskHandle, 1);
+		}
+
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
 	}
 }

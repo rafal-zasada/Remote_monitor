@@ -93,9 +93,9 @@ void SSL_email_init(void)
 {
 	printf("\nStart SSL_email_init\n");
 
-//			from forum:
-//			From the lwIP doc: "Application threads that use lwIP must be created using the lwIP sys_thread_new API......
-	sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
+//	from forum:
+//	From the lwIP doc: "Application threads that use lwIP must be created using the lwIP sys_thread_new API......
+	send_SSL_emailTaskHandle = sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
 
 //	temporary hard coded here for testing:
 	strncpy(emailSender.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
@@ -108,14 +108,8 @@ static void send_SSL_email_thread(void *argument)
 {
 	while(1)
 	{
-		// add RTOS signal (semaphore) here to send email  ???
-
-
-		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
-		{
-			send_SSL_email(newEmail.emailRecipient, newEmail.emailSubject, newEmail.emailBody);
-		}
-		osDelay(100);
+		osSignalWait(1 , osWaitForever);
+		send_SSL_email(newEmail.emailRecipient, newEmail.emailSubject, newEmail.emailBody);
 	}
 }
 

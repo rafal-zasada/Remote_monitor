@@ -10,11 +10,15 @@
 
 void SSL_email_init(void);
 
+#define EMAIL_RECIPIENT_MAX_LENGH 75
+#define EMAIL_SUBJECT_MAX_LENGH 75
+#define EMAIL_BODY_MAX_SIZE 500
+
 typedef struct emailDAtaReceipient
 {
-	char emailRecipient[75];
-	char emailSubject[75];
-	char emailBody[500];
+	char emailRecipient[EMAIL_RECIPIENT_MAX_LENGH];
+	char emailSubject[EMAIL_SUBJECT_MAX_LENGH];
+	char emailBody[EMAIL_BODY_MAX_SIZE];
 }newEmailType;
 
 #endif /* INC_SSL_EMAIL_H_ */

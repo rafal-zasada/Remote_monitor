@@ -12,11 +12,11 @@ let Watchdog_Units_DOM = document.getElementById('watchdog_units');
 let Watchdog_Action1_DOM = document.getElementById('watchdog_action1');
 let Watchdog_Action2_DOM = document.getElementById('watchdog_action2');
 let Watchdog_Email_DOM = document.getElementById('watchdog_email');
-let getHost_IP_LoopCount = 0;
-let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500);
 let request_getHost_IP = new XMLHttpRequest();
 let receivedHost_IP_string = ""; // string
 let host_IP_stringKnown = false;
+let getHost_IP_LoopInterval = setInterval(getHost_IP_Loop, 500); // Note first attempt never works due to not waiting for response - should I dd delay or onload function?
+let getHost_IP_LoopCount = 0;
 
 function getHost_IP_Loop() {
     console.log("getHostIP attempt: " + getHost_IP_LoopCount);
@@ -26,7 +26,7 @@ function getHost_IP_Loop() {
         receivedHost_IP_string = document.location.hostname;
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
-        console.log("Test");
+        console.log("Test1");
         getAllChannelSettings();
         return;
     }
@@ -36,6 +36,7 @@ function getHost_IP_Loop() {
     getHost_IP_LoopCount++;
 
     if (receivedHost_IP_string != "") {
+        console.log("Test2");
         clearInterval(getHost_IP_LoopInterval);
         host_IP_stringKnown = true;
         getAllChannelSettings();                        // should I try few times to make sure it is updated?
@@ -239,6 +240,9 @@ function SettingsChangeDelay(value) {
 function WatchdogEnableDisable() {
     console.log(document.getElementById('watchdog_on_off_button').innerHTML);
 
+
+console.log("My test");
+
     let request_postInstruction = new XMLHttpRequest();
 
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
@@ -287,10 +291,14 @@ function WatchdogSaveSettings() {
         WatchdogSettingsString = WatchdogSettingsString + " ";  // fill with spaces to get correct string length
     }
 
+    let watchdogEmailString = document.getElementById('watchdog_email').value;
+
+    watchdogEmailString = watchdogEmailString.trim();
+
     WatchdogSettingsString = WatchdogSettingsString + document.getElementById('watchdog_units').value + " " +
         document.getElementById('watchdog_action1').value + " " +
         document.getElementById('watchdog_action2').value + " " +
-        document.getElementById('watchdog_email').value;
+        watchdogEmailString;
 
     console.log(WatchdogSettingsString);
 
@@ -316,12 +324,15 @@ function WatchdogSaveSettings() {
 
 function EmailTest() {
     let request_postInstruction = new XMLHttpRequest();
+    let watchdogEmailString = document.getElementById('watchdog_email').value;
+
+    watchdogEmailString = watchdogEmailString.trim();
 
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    request_postInstruction.send("TES " + document.getElementById('watchdog_email').value);       // test email instruction for server side
+    request_postInstruction.send("TES " + watchdogEmailString);       // test email instruction for server side
 
     request_postInstruction.onload = function () {
-        if ("TES " + document.getElementById('watchdog_email').value === request_postInstruction.responseText) {
+        if ("TES " + watchdogEmailString === request_postInstruction.responseText) {
             console.log(request_postInstruction.responseText);
             // how to show that email instruction has been sent
         }
@@ -329,35 +340,29 @@ function EmailTest() {
     }
 }
 
-let aaa = 0;
 
 let inactivityWatchdog = function () {
     window.addEventListener('blur', setTimer);
     window.addEventListener('focus', resetTimer);
 
-
     let time;
 
     console.log("active interval = " + DataReadingInterval);
 
-
     function setTimer() {
-        time = setTimeout(logout, 5000);  // 10 minutes interval
+        time = setTimeout(logout, 600000);  // 10 minutes interval
     }
 
     function resetTimer() {
         clearTimeout(time);
-        setInterval(getMonitorReadingsLoop, 1000);
-
+        // setInterval(getMonitorReadingsLoop, 1000); // this would cause problem because it will create multiple intervals
     }
 }
 
 function logout() {
     clearInterval(DataReadingInterval);
-    setInterval(getMonitorReadingsLoop, 100000000);
-    alert("Updates stopped due to inactivity");
+    alert("Updates stopped due to inactivity. Refresh the page");
 }
-
 
 inactivityWatchdog();
 
