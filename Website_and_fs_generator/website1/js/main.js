@@ -8,7 +8,7 @@ let Watchdog_Status_DOM = document.getElementById('watchdog_on_off_button');
 let Watchdog_Channel_DOM = document.getElementById('watchdog_channel');
 let Watchdog_above_below_DEM = document.getElementById('watchdog_above_below');
 let Watchdog_Threshold_DOM = document.getElementById('watchdog_threshold');
-let Watchdog_Units_DOM = document.getElementById('watchdog_units');
+// let Watchdog_Units_DOM = document.getElementById('watchdog_units');
 let Watchdog_Action1_DOM = document.getElementById('watchdog_action1');
 let Watchdog_Action2_DOM = document.getElementById('watchdog_action2');
 let Watchdog_Email_DOM = document.getElementById('watchdog_email');
@@ -42,7 +42,7 @@ function getHost_IP_Loop() {
         getAllChannelSettings();                        // should I try few times to make sure it is updated?
     }
 
-    if (getHost_IP_LoopCount > 6 && receivedHost_IP_string == "") {
+    if (getHost_IP_LoopCount > 60 && receivedHost_IP_string == "") {
         clearInterval(getHost_IP_LoopInterval);
         alert("Communication error, refresh the page");
     };
@@ -75,11 +75,11 @@ function getAllChannelSettings() {
         Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting;
 
         Pulse_measurement_delay_DOM.value = serverDataParsed.pulse_measurement_delay;
-        Watchdog_Status_DOM.value = serverDataParsed.watchdogStatus;
+        Watchdog_Status_DOM.value = serverDataParsed.watchdogState;
         Watchdog_Channel_DOM.value = serverDataParsed.watchdogChannel;
         Watchdog_above_below_DEM.value = serverDataParsed.watchdogAboveBelow;
         Watchdog_Threshold_DOM.value = serverDataParsed.watchdogThreshold;
-        Watchdog_Units_DOM.value = serverDataParsed.watchdogUnits;
+        // Watchdog_Units_DOM.value = serverDataParsed.watchdogUnits;
         Watchdog_Action1_DOM.value = serverDataParsed.watchdogAction1;
         Watchdog_Action2_DOM.value = serverDataParsed.watchdogAction2;
         Watchdog_Email_DOM.value = serverDataParsed.Email_recepient;
@@ -104,28 +104,23 @@ request_getMonitorReadings.onload = function () {
 
     // console.log(serverDataParsed);
 
-    let voltage1_ReadValue = serverDataParsed.voltage1;
-    let voltage2_ReadValue = serverDataParsed.voltage2;
-    let voltage3_ReadValue = serverDataParsed.voltage3;
-    let temperature1_ReadValue = serverDataParsed.temperature1;
-    let temperature2_ReadValue = serverDataParsed.temperature2;
-    let relay1_ReadValue = serverDataParsed.relay1;
-    let relay2_ReadValue = serverDataParsed.relay2;
+    // let relay1_ReadValue = serverDataParsed.relay1;
+    // let relay2_ReadValue = serverDataParsed.relay2;
 
-    document.getElementById('CH1_voltage').innerText = voltage1_ReadValue;
-    document.getElementById('CH2_voltage').innerText = voltage2_ReadValue;
-    document.getElementById('CH3_voltage').innerText = voltage3_ReadValue;
-    document.getElementById('TC1_temp').innerText = temperature1_ReadValue + " °C";
-    document.getElementById('TC2_temp').innerText = temperature2_ReadValue + " °C";
+    document.getElementById('CH1_voltage').innerText = serverDataParsed.voltage1;
+    document.getElementById('CH2_voltage').innerText = serverDataParsed.voltage2;
+    document.getElementById('CH3_voltage').innerText = serverDataParsed.voltage3;
+    document.getElementById('TC1_temp').innerText = serverDataParsed.temperature1 + " °C";
+    document.getElementById('TC2_temp').innerText = serverDataParsed.temperature2 + " °C";
 
-    if (relay1_ReadValue == 0) {
+    if (serverDataParsed.relay1 == "0") {
         document.getElementById('Relay1').innerText = "Closed";
     }
     else {
         document.getElementById('Relay1').innerText = "Opened";
     }
 
-    if (relay2_ReadValue == 1) {
+    if (serverDataParsed.relay2 == "1") {
         document.getElementById('Relay2').innerText = "Opened";
     }
     else {
@@ -221,7 +216,7 @@ function SettingsChangeRelay2(value) {
 
 
 function SettingsChangeDelay(value) {
-    let valueTemp = document.getElementById('watchdog_on_off_button').value;
+    let valueTemp = document.getElementById('delay_setting').value;
     let request_postInstruction = new XMLHttpRequest();
 
     document.getElementById('delay_setting').value = -9; // blank select field by changing to non existent element 
@@ -241,7 +236,7 @@ function WatchdogEnableDisable() {
     console.log(document.getElementById('watchdog_on_off_button').innerHTML);
 
 
-console.log("My test");
+    console.log("My test");
 
     let request_postInstruction = new XMLHttpRequest();
 
@@ -274,6 +269,13 @@ console.log("My test");
 
 function WatchdogSettingsModified() {
     document.getElementById('watchdog_new_settings_status').innerHTML = "&nbsp; new settings not saved";
+
+    console.log("Value = " + document.getElementById('watchdog_channel').value);
+
+    if (document.getElementById('watchdog_channel').value == 4 || document.getElementById('watchdog_channel').value == 5)
+        document.getElementById('watchdog_units').innerHTML = "°C";
+    else
+        document.getElementById('watchdog_units').innerHTML = "V";
 }
 
 
@@ -282,12 +284,19 @@ function WatchdogSaveSettings() {
     // (0)WAT   (4)OPT   (8)0      (10)0    (12)123.44  (19)0   (21)0   (23)0     (25)heniek@poczta.onet.pl  (position in the string in brackets)
     // watchdog options channel above/below   value     units  action1  action2         email
 
+    // (19  units not used anymore )
+
     let WatchdogSettingsString = "WAT OPT" + " " +
         document.getElementById('watchdog_channel').value + " " +
         document.getElementById('watchdog_above_below').value + " " +
         document.getElementById('watchdog_threshold').value + " ";
 
     while (WatchdogSettingsString.length < 19) {
+        WatchdogSettingsString = WatchdogSettingsString + " ";  // fill with spaces to get correct string length
+    }
+
+    // (19  units not used anymore - adjust string length, tidy up code later)
+    while (WatchdogSettingsString.length < 21) {
         WatchdogSettingsString = WatchdogSettingsString + " ";  // fill with spaces to get correct string length
     }
 
@@ -321,22 +330,31 @@ function WatchdogSaveSettings() {
     }
 }
 
+// let testEmailTimeout;
 
 function EmailTest() {
-    let request_postInstruction = new XMLHttpRequest();
     let watchdogEmailString = document.getElementById('watchdog_email').value;
 
     watchdogEmailString = watchdogEmailString.trim();
 
-    request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
-    request_postInstruction.send("TES " + watchdogEmailString);       // test email instruction for server side
+    sendInstructionToServer();
 
-    request_postInstruction.onload = function () {
-        if ("TES " + watchdogEmailString === request_postInstruction.responseText) {
-            console.log(request_postInstruction.responseText);
-            // how to show that email instruction has been sent
+    // testEmailTimeout = setTimeout(sendInstructionToServer, 3000);   // to try again after 3s if there is no response
+
+    function sendInstructionToServer() {
+        console.log("sendInstructionTo Server triggered");
+
+        let request_postInstruction = new XMLHttpRequest();
+
+        request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
+        request_postInstruction.send("TES " + watchdogEmailString);       // test email instruction for server side
+
+        request_postInstruction.onload = function () {
+            if ("TES " + watchdogEmailString === request_postInstruction.responseText) {
+                console.log(request_postInstruction.responseText);
+                // clearTimeout(testEmailTimeout); // no need to try again
+            }
         }
-        // else
     }
 }
 
@@ -371,6 +389,6 @@ inactivityWatchdog();
 
 
 
-
+// remove watchdog units from communication and server
 
 

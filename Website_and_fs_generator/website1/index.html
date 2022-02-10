@@ -127,16 +127,19 @@
   <br>
   <br>
 
-  <div class="options_below_table">
-    <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog status: </span>
-    <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
-    <span class="options_below_table">
-      <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();">&nbsp disable &nbsp</button>
-    </span>
-  </div>
-
   <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;">
-    <div style="font-weight: bold;" class="options_below_table">&nbsp Watchdog settings</div>
+
+
+    <div class="options_below_table">
+      <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
+      <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
+      <span class="options_below_table">
+        <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
+        >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
+      </span>
+    </div>
+
+    <div style="font-weight: bold;" class="options_below_table">&nbsp Watchdog settings:</div>
     <span class="options_below_table">
       <span class="options_below_table_cell">&nbsp If &nbsp</span>
       <select class="options_setting" id="watchdog_channel" onchange="WatchdogSettingsModified()">
@@ -159,11 +162,7 @@
         oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
         type="number" maxlength="6" onchange="WatchdogSettingsModified()">
 
-      <select class="options_setting" id="watchdog_units" onchange="WatchdogSettingsModified()">
-        <option value="1">mV</option>
-        <option value="2">V</option>
-        <option value="3">°C</option>
-      </select>
+      <span class="options_below_table_cell" id="watchdog_units">V</span>
 
       <span>&nbsp then &nbsp</span>
 
@@ -193,16 +192,22 @@
     </span>
 
     <div class="options_below_table">
-      <span class="options_below_table_cell">&nbsp Enter email for notifications: </span>
+      <span class="options_below_table_cell">&nbsp Email for notifications: </span>
       <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45"
         onchange="WatchdogSettingsModified()">
-      <button type="button" class="buttons" id="test_email_button" onclick="EmailTest()">&nbsp test email &nbsp</button>
     </div>
+
     <div>
       <div style="font-style: italic;" class="options_below_table" id="watchdog_new_settings_status">&nbsp settings
         saved</div>
       <span>&nbsp</span>
       <button type="button" class="buttons" id="save_watchdog_button" onclick="WatchdogSaveSettings()">&nbsp save
+        settings
+        &nbsp</button>
+
+      <span> &nbsp </span>
+
+      <button type="button" class="buttons" id="test_email_button" onclick="EmailTest()">&nbsp send test email
         &nbsp</button>
     </div>
   </div>

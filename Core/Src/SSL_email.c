@@ -259,7 +259,7 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 
 //	osDelay(100);
 
-	mbedtls_ssl_conf_read_timeout (&conf, 2000); // reduce timeout as receiving is not as important as during handshake ?
+	mbedtls_ssl_conf_read_timeout (&conf, 4000); // reduce timeout as receiving is not as important as during handshake ?
 
 
 	ret = mbedtls_ssl_read( &ssl, buf, len ); // ret value can be used for error checking (MBEDTLS_ERR_SSL_TIMEOUT -0x6800)

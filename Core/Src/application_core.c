@@ -38,8 +38,8 @@ osMailQId mailSettingsHandle;
 #define WATCHDOG_ENABLED 1
 #define WATCHDOG_TRIGGERED 2
 
-#define WATCHDOG_TRIG_FALLING_EDGE 0
-#define WATCHDOG_TRIG_RAISING_EDGE 1
+#define RAISING_EDGE 1
+#define FALLING_EDGE 2
 
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
@@ -47,15 +47,13 @@ int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value
 int Relay2_setting = 0;  // relay setting = its value
 int pulseMeasurementDelay = 3;
-int watchdogStatus = 1;
+int watchdogState = 1;
 int watchdogChannel = 2;
-int watchdogAboveBelow = 1;
+int watchdogTriggerEdge = RAISING_EDGE;
 float watchdogThreshold = 23.4;
-int watchdogUnits = 2;
+//int watchdogUnits = 2;	//	not used - to be removed
 int watchdogAction1 = 3;
 int watchdogAction2 = 4;
-
-
 
 int voltage1_raw;
 int voltage2_raw;
@@ -65,6 +63,7 @@ float voltage2 = -3.44;		// ADC2
 float voltage3 = -4.5;		// ADC3
 float temperature1 = -15.3;
 float temperature2 = -17.7;
+
 monitorValuesType monitorValues;
 
 void app_core_init(void)
@@ -221,7 +220,7 @@ static void receive_settings_mail_and_parse(void)
 		{
 			if(strncmp(receivedMessagePtr + 4, "SET", 3) == 0)
 			{
-				watchdogStatus = strtol(receivedMessagePtr + 8, NULL, 10);
+				watchdogState = strtol(receivedMessagePtr + 8, NULL, 10);
 			}
 
 			if(strncmp(receivedMessagePtr + 4, "OPT", 3) == 0)		// watchdog options - SAVE button on website pressed
@@ -230,34 +229,50 @@ static void receive_settings_mail_and_parse(void)
 				// watchdog options channel above/below   value     units  action1  action2         email
 
 				watchdogChannel = strtol(receivedMessagePtr + 8, NULL, 10);
-				watchdogAboveBelow = strtol(receivedMessagePtr + 10, NULL, 10);
+				watchdogTriggerEdge = strtol(receivedMessagePtr + 10, NULL, 10);
 				watchdogThreshold = strtof(receivedMessagePtr + 12, NULL);	// note: string to float
-				watchdogUnits = strtol(receivedMessagePtr + 19, NULL, 10);
+//				watchdogUnits = strtol(receivedMessagePtr + 19, NULL, 10);
 				watchdogAction1 = strtol(receivedMessagePtr + 21, NULL, 10);
 				watchdogAction2 = strtol(receivedMessagePtr + 23, NULL, 10);
 				strncpy(newEmail.emailRecipient, receivedMessagePtr + 25, 45); // at the moment max email length set to 45
 
 				printf("watchdogChannel = %d\n", watchdogChannel);
-				printf("watchdogAboveBelow = %d\n", watchdogAboveBelow);
+				printf("watchdogAboveBelow = %d\n", watchdogTriggerEdge);
 				printf("watchdogThreshold = %f\n", watchdogThreshold);
-				printf("watchdogUnits = %d\n", watchdogUnits);
+//				printf("watchdogUnits = %d\n", watchdogUnits);
 				printf("watchdogAction1 = %d\n", watchdogAction1);
 				printf("watchdogAction2 = %d\n", watchdogAction2);
 				printf("newEmail.emailReceipient = %s\n", newEmail.emailRecipient);
 
 			}
-			printf("watchdogStatus = %d\n", watchdogStatus);
+			printf("watchdogStatus = %d\n", watchdogState);
 		}
 
 		if(strncmp(receivedMessagePtr, "TES", 3) == 0)
 		{
 			extern  osThreadId send_SSL_emailTaskHandle;
+			char testEmailBody[300] = {0};
+			char watchdogUnitsString[1]; // this is just for email
 
 			strncpy(newEmail.emailRecipient, receivedMessagePtr + 4, EMAIL_RECIPIENT_MAX_LENGH);
-			strncpy(newEmail.emailSubject, "Subject of test email", EMAIL_SUBJECT_MAX_LENGH);
-			strncpy(newEmail.emailBody, "Body of test email", EMAIL_BODY_MAX_SIZE);
+			strncpy(newEmail.emailSubject, "This is test email from Monitor1", EMAIL_SUBJECT_MAX_LENGH);
 
-			osSignalSet(send_SSL_emailTaskHandle, 1);
+			snprintf(testEmailBody, 300, "CH 1 voltage = %s\n"
+									     "CH 2 voltage = %s\n"
+										 "CH 3 voltage = %s\n"
+										 "TC 1 temperature = %s\n"
+										 "TC 1 temperature = %s\n\n"
+										 "Watchdog state = %d\n"
+										 "Watchdog settings:\n"
+										 "If CH%d is %d %f %s then %d and %d\n"
+										 "Email for notifications: %s\n",
+										 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str,
+										 monitorValues.temperature2_str, watchdogState, watchdogChannel, watchdogTriggerEdge, watchdogThreshold, watchdogUnitsString,
+										 watchdogAction1, watchdogAction2, newEmail.emailRecipient);
+
+
+			strncpy(newEmail.emailBody, testEmailBody, EMAIL_BODY_MAX_SIZE);
+			osSignalSet(send_SSL_emailTaskHandle, 1); // send email
 		}
 
 		osMailFree(mailSettingsHandle, newSettingsReceivedPtr);
