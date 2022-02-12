@@ -1,0 +1,1 @@
+Read actual value of relay with GPIO instead of using its setting?

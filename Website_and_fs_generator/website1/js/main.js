@@ -304,8 +304,7 @@ function WatchdogSaveSettings() {
 
     watchdogEmailString = watchdogEmailString.trim();
 
-    WatchdogSettingsString = WatchdogSettingsString + document.getElementById('watchdog_units').value + " " +
-        document.getElementById('watchdog_action1').value + " " +
+    WatchdogSettingsString = WatchdogSettingsString + document.getElementById('watchdog_action1').value + " " +
         document.getElementById('watchdog_action2').value + " " +
         watchdogEmailString;
 

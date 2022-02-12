@@ -20,6 +20,7 @@ static void read_monitor_values(void);
 static void receive_settings_mail_and_parse(void);
 static void monitor_data_to_string(void);
 static void ADC_raw_to_voltage(void);
+static void ExecuteWatchdogActions(int triggeringChannel);
 
 extern TIM_HandleTypeDef htim9;
 extern struct emailDAtaReceipient newEmail;
@@ -37,6 +38,11 @@ osMailQId mailSettingsHandle;
 #define WATCHDOG_DISABLED 0
 #define WATCHDOG_ENABLED 1
 #define WATCHDOG_TRIGGERED 2
+#define WATCHDOG_CHANNEL_CH1 1
+#define WATCHDOG_CHANNEL_CH2 2
+#define WATCHDOG_CHANNEL_CH3 3
+#define WATCHDOG_CHANNEL_TC1 1
+#define WATCHDOG_CHANNEL_TC2 2
 
 #define RAISING_EDGE 1
 #define FALLING_EDGE 2
@@ -47,8 +53,8 @@ int CH3_setting = ADC_FREE_RUN;
 int Relay1_setting = 1;  // relay setting = its value in other parts of the source code
 int Relay2_setting = 0;  // relay setting = its value in other parts of the source code
 int pulseMeasurementDelay = 3;
-int watchdogState = 1;
-int watchdogChannel = 2;
+int watchdogState = WATCHDOG_ENABLED;
+int watchdogChannel = WATCHDOG_CHANNEL_CH1;
 int watchdogTriggerEdge = RAISING_EDGE;
 float watchdogThreshold = 23.4;
 //int watchdogUnits = 2;	//	not used - to be removed
@@ -335,7 +341,6 @@ static void receive_settings_mail_and_parse(void)
 										 monitorValues.temperature2_str, watchdogStateString, watchdogChannel, watchdogTriggerEdgeString, watchdogThreshold, watchdogUnitsString,
 										 watchdogAction1String, watchdogAction2String, newEmail.emailRecipient);
 
-
 			strncpy(newEmail.emailBody, testEmailBody, EMAIL_BODY_MAX_SIZE);
 			osSignalSet(send_SSL_emailTaskHandle, 1); // send email
 		}
@@ -390,9 +395,101 @@ static void read_monitor_values(void)
 
 
 
-
+	//**************
 	// read temperatures here - to be implemented
+	//**************
 
+
+
+	// check watchdog condition
+	if(watchdogState == WATCHDOG_ENABLED)
+	{
+		if(watchdogChannel == WATCHDOG_CHANNEL_CH1)
+		{
+			if(watchdogTriggerEdge == RAISING_EDGE)
+			{
+				if(voltage1 > watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH1);
+				}
+			}
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+			{
+				if(voltage1 < watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH1);
+				}
+			}
+		}
+		else if(watchdogChannel == WATCHDOG_CHANNEL_CH2)
+		{
+			if(watchdogTriggerEdge == RAISING_EDGE)
+			{
+				if(voltage2 > watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH2);
+				}
+			}
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+			{
+				if(voltage2 < watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH2);
+				}
+			}
+		}
+		else if(watchdogChannel == WATCHDOG_CHANNEL_CH3)
+		{
+			if(watchdogTriggerEdge == RAISING_EDGE)
+			{
+				if(voltage3 > watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH3);
+				}
+			}
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+			{
+				if(voltage3 < watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH3);
+				}
+			}
+		}
+		else if(watchdogChannel == WATCHDOG_CHANNEL_TC1)
+		{
+			if(watchdogTriggerEdge == RAISING_EDGE)
+			{
+				if(temperature1 > watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC1);
+				}
+			}
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+			{
+				if(temperature1 < watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC1);
+				}
+			}
+		}
+		else if(watchdogChannel == WATCHDOG_CHANNEL_TC2)
+		{
+			if(watchdogTriggerEdge == RAISING_EDGE)
+			{
+				if(temperature2 > watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC2);
+				}
+			}
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+			{
+				if(temperature2 < watchdogThreshold)
+				{
+					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC2);
+				}
+			}
+		}
+	}
 }
 
 static void ADC_raw_to_voltage(void)
@@ -403,9 +500,91 @@ static void ADC_raw_to_voltage(void)
 	voltage1 = voltage1_raw;
 	voltage2 = voltage2_raw;
 	voltage3 = voltage3_raw;
-
 }
 
+static void ExecuteWatchdogActions(int triggeringChannel)
+{
+	// from website
+	// <option value="0">no action</option>
+	// <option value="1">send email</option>
+	// <option value="2">open Relay 1</option>
+	// <option value="3">open Relay 2</option>
+	// <option value="4">close Relay 1</option>
+	// <option value="5">close Relay 2</option>
+	// <option value="6">send email + open Relay 1</option>
+	// <option value="7">wait 60s + open Relay 2</option>
+
+	#define SEND_EMAIL 		1
+	#define OPEN_RELAY_1 	2
+	#define OPEN_RELAY_2 	3
+	#define CLOSE_RELAY_1	4
+	#define CLOSE_RELAY_2	5
+	#define SEND_EMAIL_OPEN_RELAY_1   6
+	#define WAIT_60S_OPEN_RELAY_2	  7
+
+	if(watchdogState == WATCHDOG_TRIGGERED)
+	{
+		return; // no action if already triggered once (and not cleared)
+	}
+
+	printf("Test inside ExecuteWatchdogActions \n ");
+
+
+	extern  osThreadId send_SSL_emailTaskHandle;
+	char WatchdogEmailBody[EMAIL_BODY_MAX_SIZE] = {0};
+	char watchdogEmailSubject[EMAIL_SUBJECT_MAX_LENGH] = {0};
+
+	// email always prepared but for some options it is not sent
+
+	if(triggeringChannel == WATCHDOG_CHANNEL_CH1)
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 1 voltage triggered watchdog !");
+
+	if(triggeringChannel == WATCHDOG_CHANNEL_CH2)
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 2 voltage triggered watchdog !");
+
+	if(triggeringChannel == WATCHDOG_CHANNEL_CH3)
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 3 voltage triggered watchdog !");
+
+	if(triggeringChannel == WATCHDOG_CHANNEL_TC1)
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 1 temperature triggered watchdog !");
+
+	if(triggeringChannel == WATCHDOG_CHANNEL_TC2)
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 2 temperature triggered watchdog !");
+
+	snprintf(WatchdogEmailBody, EMAIL_BODY_MAX_SIZE, "CH 1 voltage = %s\n"
+										     "CH 2 voltage = %s\n"
+											 "CH 3 voltage = %s\n"
+											 "TC 1 temperature = %s C\n"
+											 "TC 1 temperature = %s C\n\n",
+											 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str,
+											 monitorValues.temperature1_str, monitorValues.temperature2_str);
+
+	strncpy(newEmail.emailBody, WatchdogEmailBody, EMAIL_BODY_MAX_SIZE);
+	strncpy(newEmail.emailSubject, watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH);
+
+	if(watchdogAction1 == SEND_EMAIL)
+		osSignalSet(send_SSL_emailTaskHandle, 1); // send email
+	else if(watchdogAction1 == OPEN_RELAY_1)
+		Relay1_setting = 1;
+	else if(watchdogAction1 == OPEN_RELAY_2)
+		Relay2_setting = 1;
+	else if(watchdogAction1 == CLOSE_RELAY_1)
+		Relay1_setting = 0;
+	else if(watchdogAction1 == CLOSE_RELAY_2)
+		Relay2_setting = 0;
+	else if(watchdogAction1 == SEND_EMAIL_OPEN_RELAY_1)
+	{
+		osSignalSet(send_SSL_emailTaskHandle, 1);
+		Relay1_setting = 1;
+	}
+	else if(watchdogAction1 == WAIT_60S_OPEN_RELAY_2)
+	{
+		// use RTOS software timer?
+		Relay2_setting = 1;
+	}
+
+	watchdogState = WATCHDOG_TRIGGERED;
+}
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 {
