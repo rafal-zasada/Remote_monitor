@@ -27,6 +27,8 @@ with:
 3. Copy netbiosns.c to LWIP/Target (or somwhere else?)
 
 
+  SCB_DisableICache(); ????
+
 
 
 

@@ -44,8 +44,8 @@ osMailQId mailSettingsHandle;
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
 int CH3_setting = ADC_FREE_RUN;
-int Relay1_setting = 1;  // relay setting = its value
-int Relay2_setting = 0;  // relay setting = its value
+int Relay1_setting = 1;  // relay setting = its value in other parts of the source code
+int Relay2_setting = 0;  // relay setting = its value in other parts of the source code
 int pulseMeasurementDelay = 3;
 int watchdogState = 1;
 int watchdogChannel = 2;
@@ -251,11 +251,26 @@ static void receive_settings_mail_and_parse(void)
 		if(strncmp(receivedMessagePtr, "TES", 3) == 0)
 		{
 			extern  osThreadId send_SSL_emailTaskHandle;
-			char testEmailBody[300] = {0};
-			char watchdogUnitsString[1]; // this is just for email
+			char testEmailBody[400] = {0};
+			char watchdogUnitsString[2]; 	// this is just for email (null termination required for snprintf)
+			char watchdogStateString[10];
+
+			if(watchdogChannel == 1 || watchdogChannel == 2 || watchdogChannel == 3)
+				strncpy(watchdogUnitsString, "V", 2);
+			else
+				strncpy(watchdogUnitsString, "C", 2);
+
+			if(watchdogState == WATCHDOG_DISABLED)
+				strncpy(watchdogStateString, "DISABLED", 10);
+			else if(watchdogState == WATCHDOG_ENABLED)
+				strncpy(watchdogStateString, "ENABLED", 10);
+			else if(watchdogState == WATCHDOG_TRIGGERED)
+				strncpy(watchdogStateString, "TRIGGERED",10);
 
 			strncpy(newEmail.emailRecipient, receivedMessagePtr + 4, EMAIL_RECIPIENT_MAX_LENGH);
 			strncpy(newEmail.emailSubject, "This is test email from Monitor1", EMAIL_SUBJECT_MAX_LENGH);
+
+
 
 			snprintf(testEmailBody, 300, "CH 1 voltage = %s\n"
 									     "CH 2 voltage = %s\n"
@@ -344,7 +359,7 @@ static void ADC_raw_to_voltage(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 {
-//	GPIOG->BSRR = GPIO_PIN_0;	// set pin 0, 3 clock cycles
+//	bug: if interrupt is triggered before TIM9 is running then application will freeze
 
 	printf("\nInterrupt triggered by GPIO\n");
 

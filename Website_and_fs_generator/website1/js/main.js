@@ -89,7 +89,7 @@ function getAllChannelSettings() {
 
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
-const DataReadingInterval = setInterval(getMonitorReadingsLoop, 500);
+const DataReadingInterval = setInterval(getMonitorReadingsLoop, 200);
 
 function getMonitorReadingsLoop() {
     if (host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown

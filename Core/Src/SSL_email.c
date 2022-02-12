@@ -295,7 +295,7 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 
 void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody)
 {
-	char send_buffer[200];
+	char send_buffer[EMAIL_BODY_MAX_SIZE];
 	int send_len = 0;
 
 	snprintf(send_buffer, sizeof(send_buffer), "EHLO gmail.com\r\n");
