@@ -124,7 +124,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 220);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 200);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -147,13 +147,14 @@ void StartDefaultTask(void const * argument)
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 
-
-
-	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 
 	osDelay(1000);
 //	osDelay(1);
+//
+//	asm("NOP");
+//	asm("NOP");
+
 
 	app_core_init();
 

@@ -251,9 +251,12 @@ static void receive_settings_mail_and_parse(void)
 		if(strncmp(receivedMessagePtr, "TES", 3) == 0)
 		{
 			extern  osThreadId send_SSL_emailTaskHandle;
-			char testEmailBody[400] = {0};
+			char testEmailBody[EMAIL_BODY_MAX_SIZE] = {0};
 			char watchdogUnitsString[2]; 	// this is just for email (null termination required for snprintf)
 			char watchdogStateString[10];
+			char watchdogTriggerEdgeString[6];
+			char watchdogAction1String[30];
+			char watchdogAction2String[30];
 
 			if(watchdogChannel == 1 || watchdogChannel == 2 || watchdogChannel == 3)
 				strncpy(watchdogUnitsString, "V", 2);
@@ -267,23 +270,70 @@ static void receive_settings_mail_and_parse(void)
 			else if(watchdogState == WATCHDOG_TRIGGERED)
 				strncpy(watchdogStateString, "TRIGGERED",10);
 
+			if(watchdogTriggerEdge == RAISING_EDGE)
+				strncpy(watchdogTriggerEdgeString, "above", 6);
+			else if(watchdogTriggerEdge == FALLING_EDGE)
+				strncpy(watchdogTriggerEdgeString, "below", 6);
+
+
+			// from website
+			// <option value="0">no action</option>
+			// <option value="1">send email</option>
+			// <option value="2">open Relay 1</option>
+			// <option value="3">open Relay 2</option>
+			// <option value="4">close Relay 1</option>
+			// <option value="5">close Relay 2</option>
+			// <option value="6">send email + open Relay 1</option>
+			// <option value="7">wait 60s + open Relay 2</option>
+			if(watchdogAction1 == 0)
+				strncpy(watchdogAction1String, "no action", 30);
+			else if(watchdogAction1 == 1)
+				strncpy(watchdogAction1String, "send email", 30);
+			else if(watchdogAction1 == 2)
+				strncpy(watchdogAction1String, "open Relay 1", 30);
+			else if(watchdogAction1 == 3)
+				strncpy(watchdogAction1String, "open Relay 2", 30);
+			else if(watchdogAction1 == 4)
+				strncpy(watchdogAction1String, "close Relay 1", 30);
+			else if(watchdogAction1 == 5)
+				strncpy(watchdogAction1String, "close Relay 2", 30);
+			else if(watchdogAction1 == 6)
+				strncpy(watchdogAction1String, "send email + open Relay 1", 30);
+			else if(watchdogAction1 == 7)
+				strncpy(watchdogAction1String, "wait 60s + open Relay 2", 30);
+
+			if(watchdogAction2 == 0)
+				strncpy(watchdogAction2String, "no action", 30);
+			else if(watchdogAction2 == 1)
+				strncpy(watchdogAction2String, "send email", 30);
+			else if(watchdogAction2 == 2)
+				strncpy(watchdogAction2String, "open Relay 1", 30);
+			else if(watchdogAction2 == 3)
+				strncpy(watchdogAction2String, "open Relay 2", 30);
+			else if(watchdogAction2 == 4)
+				strncpy(watchdogAction2String, "close Relay 1", 30);
+			else if(watchdogAction2 == 5)
+				strncpy(watchdogAction2String, "close Relay 2", 30);
+			else if(watchdogAction2 == 6)
+				strncpy(watchdogAction2String, "send email + open Relay 1", 30);
+			else if(watchdogAction2 == 7)
+				strncpy(watchdogAction2String, "wait 60s + open Relay 2", 30);
+
 			strncpy(newEmail.emailRecipient, receivedMessagePtr + 4, EMAIL_RECIPIENT_MAX_LENGH);
 			strncpy(newEmail.emailSubject, "This is test email from Monitor1", EMAIL_SUBJECT_MAX_LENGH);
 
-
-
-			snprintf(testEmailBody, 300, "CH 1 voltage = %s\n"
+			snprintf(testEmailBody, 400, "CH 1 voltage = %s\n"
 									     "CH 2 voltage = %s\n"
 										 "CH 3 voltage = %s\n"
-										 "TC 1 temperature = %s\n"
-										 "TC 1 temperature = %s\n\n"
-										 "Watchdog state = %d\n"
+										 "TC 1 temperature = %s C\n"
+										 "TC 1 temperature = %s C\n\n"
+										 "Watchdog state = %s\n"
 										 "Watchdog settings:\n"
-										 "If CH%d is %d %f %s then %d and %d\n"
+										 "If CH%d is %s %f %s then %s and %s\n"
 										 "Email for notifications: %s\n",
 										 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str,
-										 monitorValues.temperature2_str, watchdogState, watchdogChannel, watchdogTriggerEdge, watchdogThreshold, watchdogUnitsString,
-										 watchdogAction1, watchdogAction2, newEmail.emailRecipient);
+										 monitorValues.temperature2_str, watchdogStateString, watchdogChannel, watchdogTriggerEdgeString, watchdogThreshold, watchdogUnitsString,
+										 watchdogAction1String, watchdogAction2String, newEmail.emailRecipient);
 
 
 			strncpy(newEmail.emailBody, testEmailBody, EMAIL_BODY_MAX_SIZE);

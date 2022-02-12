@@ -62,7 +62,7 @@
 /*----- Value in opt.h for LWIP_DNS_SECURE: (LWIP_DNS_SECURE_RAND_XID | LWIP_DNS_SECURE_NO_MULTIPLE_OUTSTANDING | LWIP_DNS_SECURE_RAND_SRC_PORT) -*/
 #define LWIP_DNS_SECURE 7
 /*----- Default Value for TCP_MSS: 536 ---*/
-#define TCP_MSS 1460
+#define TCP_MSS 1426
 /*----- Value in opt.h for TCP_SND_QUEUELEN: (4*TCP_SND_BUF + (TCP_MSS - 1))/TCP_MSS -----*/
 #define TCP_SND_QUEUELEN 9
 /*----- Value in opt.h for TCP_SNDQUEUELOWAT: LWIP_MAX(TCP_SND_QUEUELEN)/2, 5) -*/
@@ -121,9 +121,11 @@
 #define CHECKSUM_CHECK_ICMP 0
 /*----- Value in opt.h for CHECKSUM_CHECK_ICMP6: 1 -----*/
 #define CHECKSUM_CHECK_ICMP6 0
+/*----- Default Value for DHCP_DEBUG: LWIP_DBG_OFF ---*/
+#define DHCP_DEBUG LWIP_DBG_ON
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
-
+#define LWIP_DEBUG
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

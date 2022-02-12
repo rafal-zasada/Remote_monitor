@@ -100,11 +100,11 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Src/ssl_example_from_github.c|Src/ssl_client.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="Target/ethernetif_mod.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="LWIP"/>
+						<entry excluding="Src/ssl_example_from_github.c|Src/ssl_client.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MBEDTLS"/>
 						<entry excluding="Third_Party/LwIP/src/apps/http/fsdata_custom.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -204,11 +204,11 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Src/ssl_example_from_github.c|Src/ssl_client.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="Target/ethernetif_mod.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="LWIP"/>
+						<entry excluding="Src/ssl_example_from_github.c|Src/ssl_client.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MBEDTLS"/>
 						<entry excluding="Third_Party/LwIP/src/apps/http/fsdata_custom.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

@@ -95,7 +95,7 @@ void SSL_email_init(void)
 
 //	from forum:
 //	From the lwIP doc: "Application threads that use lwIP must be created using the lwIP sys_thread_new API......
-	send_SSL_emailTaskHandle = sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
+	send_SSL_emailTaskHandle = sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, 1300, osPriorityNormal);
 
 //	temporary hard coded here for testing:
 	strncpy(emailSender.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
