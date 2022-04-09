@@ -247,13 +247,12 @@ static void low_level_init(struct netif *netif)
     /* Set netif link flag */
     netif->flags |= NETIF_FLAG_LINK_UP;
   }
-  __DMB();
   /* Initialize Tx Descriptors list: Chain Mode */
   HAL_ETH_DMATxDescListInit(&heth, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
-  __DMB();
+
   /* Initialize Rx Descriptors list: Chain Mode  */
   HAL_ETH_DMARxDescListInit(&heth, DMARxDscrTab, &Rx_Buff[0][0], ETH_RXBUFNB);
-  __DMB();
+
 #if LWIP_ARP || LWIP_ETHERNET
 
   /* set MAC hardware address length */
@@ -297,10 +296,10 @@ static void low_level_init(struct netif *netif)
   /* Read Register Configuration */
   HAL_ETH_ReadPHYRegister(&heth, PHY_ISFR, &regvalue);
   regvalue |= (PHY_ISFR_INT4);
-  __DMB();
+
   /* Enable Interrupt on change of link status */
   HAL_ETH_WritePHYRegister(&heth, PHY_ISFR , regvalue );
-  __DMB();
+
   /* Read Register Configuration */
   HAL_ETH_ReadPHYRegister(&heth, PHY_ISFR , &regvalue);
 
@@ -333,8 +332,6 @@ static void low_level_init(struct netif *netif)
 
 static err_t low_level_output(struct netif *netif, struct pbuf *p)
 {
-
-
   err_t errval;
   struct pbuf *q;
   uint8_t *buffer = (uint8_t *)(heth.TxDesc->Buffer1Addr);
@@ -346,9 +343,6 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   DmaTxDesc = heth.TxDesc;
   bufferoffset = 0;
 
-
-	SCB_DisableICache();
-
   /* copy frame from pbufs to driver buffers */
   for(q = p; q != NULL; q = q->next)
     {
@@ -358,7 +352,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
         errval = ERR_USE;
         goto error;
       }
-      __DMB();
+
       /* Get bytes in current lwIP buffer */
       byteslefttocopy = q->len;
       payloadoffset = 0;
@@ -368,17 +362,17 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
       {
         /* Copy data to Tx buffer*/
         memcpy( (uint8_t*)((uint8_t*)buffer + bufferoffset), (uint8_t*)((uint8_t*)q->payload + payloadoffset), (ETH_TX_BUF_SIZE - bufferoffset) );
-        __DMB();
+
         /* Point to next descriptor */
         DmaTxDesc = (ETH_DMADescTypeDef *)(DmaTxDesc->Buffer2NextDescAddr);
-        __DMB();
+
         /* Check if the buffer is available */
         if((DmaTxDesc->Status & ETH_DMATXDESC_OWN) != (uint32_t)RESET)
         {
           errval = ERR_USE;
           goto error;
         }
-        __DMB();
+
         buffer = (uint8_t *)(DmaTxDesc->Buffer1Addr);
 
         byteslefttocopy = byteslefttocopy - (ETH_TX_BUF_SIZE - bufferoffset);
@@ -392,7 +386,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
       bufferoffset = bufferoffset + byteslefttocopy;
       framelength = framelength + byteslefttocopy;
     }
-  __DMB();
+
   /* Prepare transmit descriptors to give to DMA */
   HAL_ETH_TransmitFrame(&heth, framelength);
 
@@ -403,16 +397,12 @@ error:
   /* When Transmit Underflow flag is set, clear it and issue a Transmit Poll Demand to resume transmission */
   if ((heth.Instance->DMASR & ETH_DMASR_TUS) != (uint32_t)RESET)
   {
-	    __DMB();
     /* Clear TUS ETHERNET DMA flag */
     heth.Instance->DMASR = ETH_DMASR_TUS;
-    __DMB();
+
     /* Resume DMA transmission*/
     heth.Instance->DMATPDR = 0;
   }
-
-  SCB_EnableICache();
-
   return errval;
 }
 
@@ -435,8 +425,6 @@ static struct pbuf * low_level_input(struct netif *netif)
   uint32_t payloadoffset = 0;
   uint32_t byteslefttocopy = 0;
   uint32_t i=0;
-
-  SCB_DisableICache();
 
   /* get received frame */
   if (HAL_ETH_GetReceivedFrame_IT(&heth) != HAL_OK)
@@ -467,11 +455,11 @@ static struct pbuf * low_level_input(struct netif *netif)
       {
         /* Copy data to pbuf */
         memcpy( (uint8_t*)((uint8_t*)q->payload + payloadoffset), (uint8_t*)((uint8_t*)buffer + bufferoffset), (ETH_RX_BUF_SIZE - bufferoffset));
-        __DMB();
+
         /* Point to next descriptor */
         dmarxdesc = (ETH_DMADescTypeDef *)(dmarxdesc->Buffer2NextDescAddr);
         buffer = (uint8_t *)(dmarxdesc->Buffer1Addr);
-        __DMB();
+
         byteslefttocopy = byteslefttocopy - (ETH_RX_BUF_SIZE - bufferoffset);
         payloadoffset = payloadoffset + (ETH_RX_BUF_SIZE - bufferoffset);
         bufferoffset = 0;
@@ -486,7 +474,6 @@ static struct pbuf * low_level_input(struct netif *netif)
     /* Point to first descriptor */
     dmarxdesc = heth.RxFrameInfos.FSRxDesc;
     /* Set Own bit in Rx descriptors: gives the buffers back to DMA */
-    __DMB();
     for (i=0; i< heth.RxFrameInfos.SegCount; i++)
     {
       dmarxdesc->Status |= ETH_DMARXDESC_OWN;
@@ -502,12 +489,8 @@ static struct pbuf * low_level_input(struct netif *netif)
     /* Clear RBUS ETHERNET DMA flag */
     heth.Instance->DMASR = ETH_DMASR_RBUS;
     /* Resume DMA reception */
-    __DMB();
     heth.Instance->DMARPDR = 0;
   }
-
-  SCB_EnableICache();
-
   return p;
 }
 
@@ -585,17 +568,9 @@ err_t ethernetif_init(struct netif *netif)
 
 #if LWIP_NETIF_HOSTNAME
   /* Initialize interface hostname */
-
-
-//  netif->hostname = "lwip";
-
-#include "netbiosns.h"
-
   netif->hostname = "monitor1";
   netbiosns_init();
   	netbiosns_set_name(netif->hostname);
-
-
 #endif /* LWIP_NETIF_HOSTNAME */
 
   netif->name[0] = IFNAME0;

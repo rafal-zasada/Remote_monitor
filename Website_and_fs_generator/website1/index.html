@@ -125,19 +125,20 @@
   </table>
 
   <br>
-  <br>
+
+  <div class="options_below_table">
+    <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
+    <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
+    <span class="options_below_table">
+      <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
+      >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
+    </span>
+  </div>
 
   <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;">
 
 
-    <div class="options_below_table">
-      <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
-      <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
-      <span class="options_below_table">
-        <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
-        >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
-      </span>
-    </div>
+
 
     <div style="font-weight: bold;" class="options_below_table">&nbsp Watchdog settings:</div>
     <span class="options_below_table">

@@ -41,8 +41,8 @@ osMailQId mailSettingsHandle;
 #define WATCHDOG_CHANNEL_CH1 1
 #define WATCHDOG_CHANNEL_CH2 2
 #define WATCHDOG_CHANNEL_CH3 3
-#define WATCHDOG_CHANNEL_TC1 1
-#define WATCHDOG_CHANNEL_TC2 2
+#define WATCHDOG_CHANNEL_TC1 4
+#define WATCHDOG_CHANNEL_TC2 5
 
 #define RAISING_EDGE 1
 #define FALLING_EDGE 2
@@ -92,6 +92,31 @@ void application_core_task(void const *argument)
 	strncpy(newEmail.emailRecipient, "zasi@poczta.onet.pl", 40); // temporary for test
 	strncpy(newEmail.emailSubject, "Naprawde nowy email", 40); // temporary for test
 	strncpy(newEmail.emailBody, "Tresc majla, jol :)\n", 40); // temporary for test
+
+
+
+
+
+	// test only
+	  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+	  */
+
+	  ADC_ChannelConfTypeDef sConfig = {0};
+
+	  sConfig.Channel = ADC_CHANNEL_4;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+	  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+	  /* USER CODE BEGIN ADC1_Init 2 */
+
+	  /* USER CODE END ADC1_Init 2 */
+
+
+
+
 
 	while(1)
 	{
@@ -537,25 +562,26 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	// email always prepared but for some options it is not sent
 
 	if(triggeringChannel == WATCHDOG_CHANNEL_CH1)
-		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 1 voltage triggered watchdog !");
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 1 voltage outside limit!");
 
 	if(triggeringChannel == WATCHDOG_CHANNEL_CH2)
-		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 2 voltage triggered watchdog !");
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 2 voltage outside limit!");
 
 	if(triggeringChannel == WATCHDOG_CHANNEL_CH3)
-		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 3 voltage triggered watchdog !");
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "CH 3 voltage outside limit!");
 
 	if(triggeringChannel == WATCHDOG_CHANNEL_TC1)
-		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 1 temperature triggered watchdog !");
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 1 temperature outside limit!");
 
 	if(triggeringChannel == WATCHDOG_CHANNEL_TC2)
-		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 2 temperature triggered watchdog !");
+		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 2 temperature outside limit!");
 
 	snprintf(WatchdogEmailBody, EMAIL_BODY_MAX_SIZE, "CH 1 voltage = %s\n"
 										     "CH 2 voltage = %s\n"
 											 "CH 3 voltage = %s\n"
 											 "TC 1 temperature = %s C\n"
-											 "TC 1 temperature = %s C\n\n",
+											 "TC 1 temperature = %s C\n\n"
+											 "Watchdog was been disabled following this message. To re-enable watchdog visit website http://monitor1\n",
 											 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str,
 											 monitorValues.temperature1_str, monitorValues.temperature2_str);
 

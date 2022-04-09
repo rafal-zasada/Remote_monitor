@@ -1,0 +1,24 @@
+Circuit: * C:\Electronics\STM32\Remote monitor\LTspice tests\ADC input circuit2 without op amp.asc
+
+Limiting rise time of source v13 to 1.9984e-016
+Limiting fall time of source v13 to 1.9984e-016
+Limiting rise time of source v12 to 5e-008
+Limiting fall time of source v12 to 5e-008
+Limiting rise time of source v11 to 1.9984e-016
+Limiting fall time of source v11 to 1.9984e-016
+Limiting rise time of source v9 to 5e-008
+Limiting fall time of source v9 to 5e-008
+Limiting rise time of source v2 to 1.9984e-016
+Limiting fall time of source v2 to 1.9984e-016
+Limiting rise time of source v1 to 5e-008
+Limiting fall time of source v1 to 5e-008
+Limiting rise time of source v6 to 1.9984e-016
+Limiting fall time of source v6 to 1.9984e-016
+Limiting rise time of source v5 to 5e-008
+Limiting fall time of source v5 to 5e-008
+Limiting rise time of source v3 to 1e-006
+Limiting fall time of source v3 to 1e-006
+Fatal Error: Voltage source V2 is in a loop involving voltage source V11 and other
+voltage sources and/or inductors making an over-defined circuit matrix.
+
+You will need to correct the circuit or add some series resistance.

@@ -75,11 +75,11 @@ function getAllChannelSettings() {
         Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting;
 
         Pulse_measurement_delay_DOM.value = serverDataParsed.pulse_measurement_delay;
-        Watchdog_Status_DOM.value = serverDataParsed.watchdogState;
+        // Watchdog_Status_DOM.value = serverDataParsed.watchdog_state; // to be handled by constant pooling (here only one time reading)
         Watchdog_Channel_DOM.value = serverDataParsed.watchdogChannel;
         Watchdog_above_below_DEM.value = serverDataParsed.watchdogAboveBelow;
         Watchdog_Threshold_DOM.value = serverDataParsed.watchdogThreshold;
-        // Watchdog_Units_DOM.value = serverDataParsed.watchdogUnits;
+        // Watchdog_Units_DOM.value = serverDataParsed.watchdogUnits;  // not needed
         Watchdog_Action1_DOM.value = serverDataParsed.watchdogAction1;
         Watchdog_Action2_DOM.value = serverDataParsed.watchdogAction2;
         Watchdog_Email_DOM.value = serverDataParsed.Email_recepient;
@@ -89,7 +89,7 @@ function getAllChannelSettings() {
 
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
-const DataReadingInterval = setInterval(getMonitorReadingsLoop, 200);
+const DataReadingInterval = setInterval(getMonitorReadingsLoop, 700);
 
 function getMonitorReadingsLoop() {
     if (host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
@@ -102,7 +102,7 @@ function getMonitorReadingsLoop() {
 request_getMonitorReadings.onload = function () {
     let serverDataParsed = JSON.parse(request_getMonitorReadings.responseText);
 
-    // console.log(serverDataParsed);
+    console.log(serverDataParsed);
 
     // let relay1_ReadValue = serverDataParsed.relay1;
     // let relay2_ReadValue = serverDataParsed.relay2;
@@ -126,6 +126,12 @@ request_getMonitorReadings.onload = function () {
     else {
         document.getElementById('Relay2').innerText = "Closed";
     }
+
+    if (serverDataParsed.watchdog_state == "2") {
+        document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; enable &nbsp;";
+        document.getElementById('watchdog_status_text').innerHTML = "&nbsp; TRIGGERED ! &nbsp;";
+        document.getElementById('watchdog_status_text').style.color = "red";
+    }   
 }
 
 
@@ -202,7 +208,7 @@ function SettingsChangeRelay2(value) {
     let valueTemp = document.getElementById('Relay2_setting').value;
     let request_postInstruction = new XMLHttpRequest();
 
-    document.getElementById('Relay2_setting').value = -9; // blank select field by changing to non existent element 
+    document.getElementById('Relay2_setting').value = -9; // blank selected field by changing to non existent element 
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
     request_postInstruction.send("Re2 " + value);
 
@@ -233,10 +239,6 @@ function SettingsChangeDelay(value) {
 
 
 function WatchdogEnableDisable() {
-    console.log(document.getElementById('watchdog_on_off_button').innerHTML);
-
-
-    console.log("My test");
 
     let request_postInstruction = new XMLHttpRequest();
 
@@ -249,7 +251,7 @@ function WatchdogEnableDisable() {
             if ("WAT SET 0" == request_postInstruction.responseText) {
                 document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; enable &nbsp;";
                 document.getElementById('watchdog_status_text').innerHTML = "&nbsp; DISABLED &nbsp;";
-                console.log("Setting confirmed!");
+                document.getElementById('watchdog_status_text').style.color = "rgb(52, 60, 131)"; // return to normal colour
             }
         }
     }
@@ -260,10 +262,11 @@ function WatchdogEnableDisable() {
             if ("WAT SET 1" == request_postInstruction.responseText) {
                 document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; disable &nbsp;";
                 document.getElementById('watchdog_status_text').innerHTML = "&nbsp; ENABLED &nbsp;";
-                console.log("Setting confirmed!");
+                document.getElementById('watchdog_status_text').style.color = "rgb(52, 60, 131)"; // return to normal colour
             }
         }
     }
+
 }
 
 

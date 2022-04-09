@@ -279,8 +279,9 @@ void send_monitor_data(struct netconn *conn)
 											"\"temperature1\" : \"%s\","
 											"\"temperature2\" : \"%s\","
 											"\"relay1\" : \"%d\","
-											"\"relay2\" : \"%d\""
-											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, Relay1_setting, Relay2_setting);
+											"\"relay2\" : \"%d\","
+											"\"watchdog_state\" : \"%d\""
+											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, Relay1_setting, Relay2_setting, watchdogState);
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);
