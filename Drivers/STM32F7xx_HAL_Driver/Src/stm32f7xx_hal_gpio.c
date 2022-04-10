@@ -128,7 +128,7 @@
 #define GPIO_MODE_IT          ((uint32_t)0x00010000U)
 #define GPIO_MODE_EVT         ((uint32_t)0x00020000U)
 #define RISING_EDGE           ((uint32_t)0x00100000U)
-#define FALLING_EDGE          ((uint32_t)0x00200000U)
+#define DOWNWORD          ((uint32_t)0x00200000U)
 #define GPIO_OUTPUT_TYPE      ((uint32_t)0x00000010U)
 
 #define GPIO_NUMBER           ((uint32_t)16U)
@@ -274,7 +274,7 @@ void HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, GPIO_InitTypeDef *GPIO_Init)
 
         temp = EXTI->FTSR;
         temp &= ~((uint32_t)iocurrent);
-        if((GPIO_Init->Mode & FALLING_EDGE) == FALLING_EDGE)
+        if((GPIO_Init->Mode & DOWNWORD) == DOWNWORD)
         {
           temp |= iocurrent;
         }

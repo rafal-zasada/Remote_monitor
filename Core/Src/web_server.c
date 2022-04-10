@@ -174,7 +174,7 @@ extern int Relay2_setting;
 extern int pulseMeasurementDelay;
 extern int watchdogState;
 extern int watchdogChannel;
-extern int watchdogTriggerEdge;
+extern int watchdogTriggerDirection;
 extern float watchdogThreshold;
 extern int watchdogUnits;
 extern int watchdogAction1;
@@ -207,7 +207,7 @@ static void send_all_settings(struct netconn *conn)
 										"\"watchdogAction1\" : \"%d\","
 										"\"watchdogAction2\" : \"%d\","
 										"\"Email_recepient\" : \"%s\""
-										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerEdge, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
+										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
 
 	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
 

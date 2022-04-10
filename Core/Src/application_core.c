@@ -44,8 +44,8 @@ osMailQId mailSettingsHandle;
 #define WATCHDOG_CHANNEL_TC1 4
 #define WATCHDOG_CHANNEL_TC2 5
 
-#define RAISING_EDGE 1
-#define FALLING_EDGE 2
+#define UPWARD 1
+#define DOWNWORD 2
 
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
@@ -55,7 +55,7 @@ int Relay2_setting = 0;  // relay setting = its value in other parts of the sour
 int pulseMeasurementDelay = 3;
 int watchdogState = WATCHDOG_ENABLED;
 int watchdogChannel = WATCHDOG_CHANNEL_CH1;
-int watchdogTriggerEdge = RAISING_EDGE;
+int watchdogTriggerDirection = UPWARD;
 float watchdogThreshold = 23.4;
 //int watchdogUnits = 2;	//	not used - to be removed
 int watchdogAction1 = 3;
@@ -94,10 +94,7 @@ void application_core_task(void const *argument)
 	strncpy(newEmail.emailBody, "Tresc majla, jol :)\n", 40); // temporary for test
 
 
-
-
-
-	// test only
+	// ADC test only
 	  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
 	  */
 
@@ -113,9 +110,6 @@ void application_core_task(void const *argument)
 	  /* USER CODE BEGIN ADC1_Init 2 */
 
 	  /* USER CODE END ADC1_Init 2 */
-
-
-
 
 
 	while(1)
@@ -195,7 +189,7 @@ static void monitor_data_to_string(void)
 
 static void receive_settings_mail_and_parse(void)
 {
-	osEvent mailData;
+	osEvent mailData; // (RTOS mail)
 	settingsMailDataType *newSettingsReceivedPtr;
 
 	mailData = osMailGet(mailSettingsHandle, 0);	// no waiting
@@ -260,7 +254,7 @@ static void receive_settings_mail_and_parse(void)
 				// watchdog options channel above/below   value     units  action1  action2         email
 
 				watchdogChannel = strtol(receivedMessagePtr + 8, NULL, 10);
-				watchdogTriggerEdge = strtol(receivedMessagePtr + 10, NULL, 10);
+				watchdogTriggerDirection = strtol(receivedMessagePtr + 10, NULL, 10);
 				watchdogThreshold = strtof(receivedMessagePtr + 12, NULL);	// note: string to float
 //				watchdogUnits = strtol(receivedMessagePtr + 19, NULL, 10);
 				watchdogAction1 = strtol(receivedMessagePtr + 21, NULL, 10);
@@ -268,7 +262,7 @@ static void receive_settings_mail_and_parse(void)
 				strncpy(newEmail.emailRecipient, receivedMessagePtr + 25, 45); // at the moment max email length set to 45
 
 				printf("watchdogChannel = %d\n", watchdogChannel);
-				printf("watchdogAboveBelow = %d\n", watchdogTriggerEdge);
+				printf("watchdogAboveBelow = %d\n", watchdogTriggerDirection);
 				printf("watchdogThreshold = %f\n", watchdogThreshold);
 //				printf("watchdogUnits = %d\n", watchdogUnits);
 				printf("watchdogAction1 = %d\n", watchdogAction1);
@@ -279,6 +273,7 @@ static void receive_settings_mail_and_parse(void)
 			printf("watchdogStatus = %d\n", watchdogState);
 		}
 
+		// if message contains test e-mail request handle it here
 		if(strncmp(receivedMessagePtr, "TES", 3) == 0)
 		{
 			extern  osThreadId send_SSL_emailTaskHandle;
@@ -301,9 +296,9 @@ static void receive_settings_mail_and_parse(void)
 			else if(watchdogState == WATCHDOG_TRIGGERED)
 				strncpy(watchdogStateString, "TRIGGERED",10);
 
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 				strncpy(watchdogTriggerEdgeString, "above", 6);
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 				strncpy(watchdogTriggerEdgeString, "below", 6);
 
 
@@ -431,14 +426,14 @@ static void read_monitor_values(void)
 	{
 		if(watchdogChannel == WATCHDOG_CHANNEL_CH1)
 		{
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 			{
 				if(voltage1 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH1);
 				}
 			}
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 			{
 				if(voltage1 < watchdogThreshold)
 				{
@@ -448,14 +443,14 @@ static void read_monitor_values(void)
 		}
 		else if(watchdogChannel == WATCHDOG_CHANNEL_CH2)
 		{
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 			{
 				if(voltage2 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH2);
 				}
 			}
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 			{
 				if(voltage2 < watchdogThreshold)
 				{
@@ -465,14 +460,14 @@ static void read_monitor_values(void)
 		}
 		else if(watchdogChannel == WATCHDOG_CHANNEL_CH3)
 		{
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 			{
 				if(voltage3 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_CH3);
 				}
 			}
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 			{
 				if(voltage3 < watchdogThreshold)
 				{
@@ -482,14 +477,14 @@ static void read_monitor_values(void)
 		}
 		else if(watchdogChannel == WATCHDOG_CHANNEL_TC1)
 		{
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 			{
 				if(temperature1 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC1);
 				}
 			}
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 			{
 				if(temperature1 < watchdogThreshold)
 				{
@@ -499,14 +494,14 @@ static void read_monitor_values(void)
 		}
 		else if(watchdogChannel == WATCHDOG_CHANNEL_TC2)
 		{
-			if(watchdogTriggerEdge == RAISING_EDGE)
+			if(watchdogTriggerDirection == UPWARD)
 			{
 				if(temperature2 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC2);
 				}
 			}
-			else if(watchdogTriggerEdge == FALLING_EDGE)
+			else if(watchdogTriggerDirection == DOWNWORD)
 			{
 				if(temperature2 < watchdogThreshold)
 				{
@@ -553,7 +548,6 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	}
 
 	printf("Test inside ExecuteWatchdogActions \n ");
-
 
 	extern  osThreadId send_SSL_emailTaskHandle;
 	char WatchdogEmailBody[EMAIL_BODY_MAX_SIZE] = {0};

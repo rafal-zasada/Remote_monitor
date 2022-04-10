@@ -36,8 +36,8 @@
         <td class="table_reading" id="CH1_voltage">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="CH1_setting" onchange="SettingsChangeCH1(this.value);">
-            <option value='0'>DC</option>
-            <option value='1'>Pulse</option>
+            <option value='0'>continous</option>
+            <option value='1'>triggered</option>
           </select>
         </td>
       </tr>
@@ -109,7 +109,7 @@
 
   <table class="options_below_table">
     <tr>
-      <td class="options_below_table_cell">Pulse measurement delay after trigger</td>
+      <td class="options_below_table_cell">Measurement delay (triggered only)</td>
       <td class="options_below_table_cell">
         <select class="options_setting" id="delay_setting" onchange="SettingsChangeDelay(this.value);">
           <option value='1'>1 us</option>
@@ -124,20 +124,18 @@
     </tr>
   </table>
 
-  <br>
-
-  <div class="options_below_table">
-    <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
-    <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
-    <span class="options_below_table">
-      <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
-      >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
-    </span>
-  </div>
+  <p style="font-weight: bold; padding-left: 110px;" class="title" >&nbsp &nbsp &nbsp &nbsp Watchdog</p>
 
   <div style="border: solid rgb(158, 158, 158) 1px; margin: 5px; display: inline-block; padding: 10px;">
 
-
+    <div class="options_below_table">
+      <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
+      <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
+      <span class="options_below_table">
+        <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
+        >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
+      </span>
+    </div>
 
 
     <div style="font-weight: bold;" class="options_below_table">&nbsp Watchdog settings:</div>
@@ -167,6 +165,7 @@
 
       <span>&nbsp then &nbsp</span>
 
+     <div class="options_below_table"> &nbsp Action 1
       <select class="options_setting" id="watchdog_action1" onchange="WatchdogSettingsModified()">
         <option value="0">no action</option>
         <option value="1">send email</option>
@@ -177,9 +176,11 @@
         <option value="6">send email + open Relay 1</option>
         <option value="7">wait 60s + open Relay 2</option>
       </select>
+    </div>
 
-      <span>&nbsp and &nbsp</span>
+      <!-- <span>&nbsp and &nbsp</span> -->
 
+      <div class="options_below_table"> &nbsp Action 2
       <select class="options_setting" id="watchdog_action2" onchange="WatchdogSettingsModified()">
         <option value="0">no action</option>
         <option value="1">send email</option>
@@ -191,10 +192,11 @@
         <option value="7">wait 60s + open Relay 2</option>
       </select>
     </span>
+  </div>
 
     <div class="options_below_table">
       <span class="options_below_table_cell">&nbsp Email for notifications: </span>
-      <input class="text_or_number_field" style="width: 350px;" id="watchdog_email" maxlength="45"
+      <input class="text_or_number_field" style="width: 220px;" id="watchdog_email" maxlength="45"
         onchange="WatchdogSettingsModified()">
     </div>
 

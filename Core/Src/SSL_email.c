@@ -110,6 +110,8 @@ static void send_SSL_email_thread(void *argument)
 	{
 		osSignalWait(1 , osWaitForever);
 		send_SSL_email(newEmail.emailRecipient, newEmail.emailSubject, newEmail.emailBody);
+
+		printf("Email sent\n");
 	}
 }
 

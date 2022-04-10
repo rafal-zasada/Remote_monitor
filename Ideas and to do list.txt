@@ -1,2 +1,2 @@
 Read actual value of relay with GPIO instead of using its setting?
-2. Website timeout not active after first refresh?
+2. Deadlock when trigger present before setup for normal operation is completed?
