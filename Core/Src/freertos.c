@@ -145,7 +145,7 @@ void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
 
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
 
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 
@@ -165,8 +165,8 @@ void StartDefaultTask(void const * argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		osDelay(200);
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+		  HAL_Delay(200);
 	}
 
   /* USER CODE END StartDefaultTask */

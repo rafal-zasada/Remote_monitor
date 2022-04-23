@@ -21,7 +21,7 @@ with:
   /* Initialize interface hostname */
   netif->hostname = "lwip";
   netbiosns_init();
-  	netbiosns_set_name(netif->hostname);    (can I place it somwhere else and not modify ethernetif.c?)
+  	netbiosns_set_name(netif->hostname);  
 
 2. Set LWIP_NETIF_HOSTNAME to 1
 3. Copy netbiosns.c to LWIP/Target (or somwhere else?)

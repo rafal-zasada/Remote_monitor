@@ -67,8 +67,8 @@ int voltage3_raw;
 float voltage1 = -0.922;	// ADC1
 float voltage2 = -3.44;		// ADC2
 float voltage3 = -4.5;		// ADC3
-float temperature1 = -15.3;
-float temperature2 = -17.7;
+float temperature_TC1 = -15.3;
+float temperature_TC2 = -17.7;
 
 monitorValuesType monitorValues;
 
@@ -114,7 +114,7 @@ void application_core_task(void const *argument)
 
 	while(1)
 	{
-		osDelay(50);
+		osDelay(100);
 
 		receive_settings_mail_and_parse();
 		read_monitor_values();
@@ -122,6 +122,7 @@ void application_core_task(void const *argument)
 		if(CH1_setting == ADC_TRIGGERED || CH2_setting == ADC_TRIGGERED || CH3_setting == ADC_TRIGGERED)
 		{
 			// if trigger is connected and running then interrupt flag will be already waiting - just cycle through it once to avoid unnecessary interrupts
+			// wrong - it will produce long delays
 			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 			HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 		}
@@ -183,8 +184,8 @@ static void monitor_data_to_string(void)
 	;	// avoid copiler warning
 
 	// temperature floats to strings
-	snprintf(monitorValues.temperature1_str, 6, "%0.1f", temperature1);
-	snprintf(monitorValues.temperature2_str, 6, "%0.1f", temperature2);
+	snprintf(monitorValues.temperature1_str, 6, "%0.2f", temperature_TC1);
+	snprintf(monitorValues.temperature2_str, 6, "%0.2f", temperature_TC2);
 }
 
 static void receive_settings_mail_and_parse(void)
@@ -226,11 +227,14 @@ static void receive_settings_mail_and_parse(void)
 		if(strncmp(receivedMessagePtr, "Re1", 3) == 0)
 		{
 			Relay1_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, Relay1_setting);	// update LED
+		//	doo the same for watchdog actions, also initial state is not updated
 		}
 
 		if(strncmp(receivedMessagePtr, "Re2", 3) == 0)
 		{
 			Relay2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, Relay2_setting);	// update LED
 		}
 
 		if(strncmp(receivedMessagePtr, "DEL", 3) == 0)
@@ -417,6 +421,70 @@ static void read_monitor_values(void)
 
 	//**************
 	// read temperatures here - to be implemented
+
+	extern SPI_HandleTypeDef hspi3;
+	extern SPI_HandleTypeDef hspi4;
+	unsigned char test_SPI[4];
+	int data_in;
+	int TC_temperature_raw = 0;
+	int internal_temperature_raw = 0;
+	unsigned int TC1_error = 0;
+	unsigned int TC2_error = 0;
+
+	// reading TC1 temperature
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);	// chip select ON for TC1
+	HAL_SPI_Receive(&hspi3, test_SPI, 4, 500);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		// chip select OFF for TC1
+
+	data_in = 0;
+	data_in |= test_SPI[3] << 0;
+	data_in |= test_SPI[2] << 8;
+	data_in |= test_SPI[1] << 16;
+	data_in |= test_SPI[0] << 24;
+	TC1_error |= (data_in & 65536u);	// bitwise AND with bit 16 (MAX31855 reading error)
+
+	if(!TC1_error)
+	{
+		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC_temperature_raw = data_in >> 18;
+		temperature_TC1 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy?
+
+		printf("TC1 temparature = %0.2f\n", temperature_TC1);
+		printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+	}
+	else
+	{
+		printf("TC1 error\n\n");
+	}
+
+	// reading TC2 temperature
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_RESET);	// chip select ON for TC2
+	HAL_SPI_Receive(&hspi4, test_SPI, 4, 500);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);		// chip select OFF for TC2
+
+	// re-use temporary variables
+	data_in = 0;
+	data_in |= test_SPI[3] << 0;
+	data_in |= test_SPI[2] << 8;
+	data_in |= test_SPI[1] << 16;
+	data_in |= test_SPI[0] << 24;
+	TC2_error |= (data_in & 65536u);	// bitwise AND with bit 16 (MAX31855 reading error)
+
+	if(!TC2_error)
+	{
+		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC_temperature_raw = data_in >> 18;
+		temperature_TC2 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy
+
+		printf("TC2 temparature = %0.2f\n", temperature_TC2);
+		printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+	}
+	else
+	{
+		printf("TC2 error\n\n");}
+
+
+
 	//**************
 
 
@@ -479,14 +547,14 @@ static void read_monitor_values(void)
 		{
 			if(watchdogTriggerDirection == UPWARD)
 			{
-				if(temperature1 > watchdogThreshold)
+				if(temperature_TC1 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC1);
 				}
 			}
 			else if(watchdogTriggerDirection == DOWNWORD)
 			{
-				if(temperature1 < watchdogThreshold)
+				if(temperature_TC1 < watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC1);
 				}
@@ -496,14 +564,14 @@ static void read_monitor_values(void)
 		{
 			if(watchdogTriggerDirection == UPWARD)
 			{
-				if(temperature2 > watchdogThreshold)
+				if(temperature_TC2 > watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC2);
 				}
 			}
 			else if(watchdogTriggerDirection == DOWNWORD)
 			{
-				if(temperature2 < watchdogThreshold)
+				if(temperature_TC2 < watchdogThreshold)
 				{
 					ExecuteWatchdogActions(WATCHDOG_CHANNEL_TC2);
 				}
