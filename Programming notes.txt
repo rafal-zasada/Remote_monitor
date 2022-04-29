@@ -19,7 +19,7 @@ with:
 #include "netbiosns.h" // 
 
   /* Initialize interface hostname */
-  netif->hostname = "lwip";
+  netif->hostname = "monitor1";
   netbiosns_init();
   	netbiosns_set_name(netif->hostname);  
 

@@ -19,8 +19,8 @@ typedef struct
 	char voltage1_str[9];
 	char voltage2_str[9];
 	char voltage3_str[9];
-	char temperature1_str[7];
-	char temperature2_str[7];
+	char temperature1_str[9];
+	char temperature2_str[9];
 	char watchdogStatus_str[12];
 } monitorValuesType;
 

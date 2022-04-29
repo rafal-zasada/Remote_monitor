@@ -75,7 +75,7 @@ function getAllChannelSettings() {
         Setting_Relay2_DOM.value = serverDataParsed.Relay2_setting;
 
         Pulse_measurement_delay_DOM.value = serverDataParsed.pulse_measurement_delay;
-        // Watchdog_Status_DOM.value = serverDataParsed.watchdog_state; // to be handled by constant pooling (here only one time reading)
+        // Watchdog_Status_DOM.value = serverDataParsed.watchdog_state; // starts with disabed and triggered state to be handled by constant pooling (here only one time reading)
         Watchdog_Channel_DOM.value = serverDataParsed.watchdogChannel;
         Watchdog_above_below_DEM.value = serverDataParsed.watchdogAboveBelow;
         Watchdog_Threshold_DOM.value = serverDataParsed.watchdogThreshold;
@@ -89,7 +89,7 @@ function getAllChannelSettings() {
 
 // Read server values and update document - begining ********************************************************************
 let request_getMonitorReadings = new XMLHttpRequest(); // to receive data
-const DataReadingInterval = setInterval(getMonitorReadingsLoop, 700);
+const DataReadingInterval = setInterval(getMonitorReadingsLoop, 200);
 
 function getMonitorReadingsLoop() {
     if (host_IP_stringKnown == false) return; // don't attempt to read data from server while IP is unknown
@@ -110,10 +110,26 @@ request_getMonitorReadings.onload = function () {
     document.getElementById('CH1_voltage').innerText = serverDataParsed.voltage1;
     document.getElementById('CH2_voltage').innerText = serverDataParsed.voltage2;
     document.getElementById('CH3_voltage').innerText = serverDataParsed.voltage3;
+
+    if(serverDataParsed.temperature1 == -888) {
+        document.getElementById('TC1_temp').innerText = "not connected";
+    }
+    else if(serverDataParsed.temperature1 == -999) {
+        document.getElementById('TC1_temp').innerText = "error";
+    }
+    else 
     document.getElementById('TC1_temp').innerText = serverDataParsed.temperature1 + " °C";
+    
+    if(serverDataParsed.temperature2 == -888) {
+        document.getElementById('TC2_temp').innerText = "not connected";
+    }
+    else if(serverDataParsed.temperature2 == -999) {
+        document.getElementById('TC2_temp').innerText = "error";
+    }
+    else 
     document.getElementById('TC2_temp').innerText = serverDataParsed.temperature2 + " °C";
 
-    if (serverDataParsed.relay1 == "0") {
+    if (serverDataParsed.relay1 == "1") {
         document.getElementById('Relay1').innerText = "Closed";
     }
     else {
@@ -121,10 +137,10 @@ request_getMonitorReadings.onload = function () {
     }
 
     if (serverDataParsed.relay2 == "1") {
-        document.getElementById('Relay2').innerText = "Opened";
+        document.getElementById('Relay2').innerText = "Closed";
     }
     else {
-        document.getElementById('Relay2').innerText = "Closed";
+        document.getElementById('Relay2').innerText = "Opened";
     }
 
     if (serverDataParsed.watchdog_state == "2") {
@@ -188,6 +204,8 @@ function SettingsChangeCH3(value) {
 
 
 function SettingsChangeRelay1(value) {
+    console.log("Switch1 = " + value);
+
     let valueTemp = document.getElementById('Relay1_setting').value;
     let request_postInstruction = new XMLHttpRequest();
 

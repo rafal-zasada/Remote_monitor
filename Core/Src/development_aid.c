@@ -26,10 +26,11 @@ void GUI_UART_Task(void const *argument)
 {
 	while(1)
 	{
-		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
+		if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5) == 1)
 		{
 			printf("\nTest of printf\n");
 
+			// this is old way - now you can use just printf thanks to newlib nano re-direction
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "IP = %lu\n\n", gnetif.ip_addr.addr);
 			HAL_UART_Transmit(&huart3, (uint8_t*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
@@ -92,5 +93,11 @@ void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName )
 // Call xPortGetFreeHeapSize(), create your tasks queues semaphores etc. then call xPortGetFreeHeapSize() again to find the difference. http://www.freertos.org/a00111.html
 // There’s also  xPortGetMinimumEverFreeHeapSize() but only when using heap4
 
+
+
+//void vApplicationIdleHook(void)
+//{
+//	printf("idle\n");
+//}
 
 

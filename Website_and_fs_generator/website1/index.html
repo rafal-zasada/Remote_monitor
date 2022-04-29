@@ -36,7 +36,7 @@
         <td class="table_reading" id="CH1_voltage">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="CH1_setting" onchange="SettingsChangeCH1(this.value);">
-            <option value='0'>continous</option>
+            <option value='0'>free run</option>
             <option value='1'>triggered</option>
           </select>
         </td>
@@ -47,8 +47,8 @@
         <td class="table_reading" id="CH2_voltage">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="CH2_setting" onchange="SettingsChangeCH2(this.value);">
-            <option value='0'>DC</option>
-            <option value='1'>Pulse</option>
+            <option value='0'>free run</option>
+            <option value='1'>triggered</option>
           </select>
         </td>
       </tr>
@@ -58,8 +58,8 @@
         <td class="table_reading" id="CH3_voltage">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="CH3_setting" onchange="SettingsChangeCH3(this.value);">
-            <option value='0'>DC</option>
-            <option value='1'>Pulse</option>
+            <option value='0'>free run</option>
+            <option value='1'>triggered</option>
           </select>
         </td>
       </tr>
@@ -77,24 +77,24 @@
       </tr>
 
       <tr>
-        <td class="table_channel">Relay 1</td>
+        <td class="table_channel">Switch 1</td>
         <td class="table_reading" id="Relay1">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="Relay1_setting" onchange="SettingsChangeRelay1(this.value);">
-            <option value='0'>Close</option>
-            <option value='1'>Open</option>
+            <option value='0'>Open</option>
+            <option value='1'>Close</option>
           </select>
 
         </td>
       </tr>
 
       <tr>
-        <td class="table_channel">Relay 2</td>
+        <td class="table_channel">Switch 2</td>
         <td class="table_reading" id="Relay2">awaiting</td>
         <td class="table_settings">
           <select class="channel_setting" id="Relay2_setting" onchange="SettingsChangeRelay2(this.value);">
-            <option value='0'>Close</option>
-            <option value='1'>Open</option>
+            <option value='0'>Open</option>
+            <option value='1'>Close</option>
           </select>
         </td>
       </tr>
@@ -130,10 +130,10 @@
 
     <div class="options_below_table">
       <span style="font-weight: bold;" class="options_below_table">&nbsp Watchdog state: </span>
-      <span style="font-style: italic;" id="watchdog_status_text">&nbsp ENABLED &nbsp</span>
+      <span style="font-style: italic;" id="watchdog_status_text">&nbsp DISABLED &nbsp</span>
       <span class="options_below_table">
         <button type="button" class="buttons" id="watchdog_on_off_button" onclick="WatchdogEnableDisable();"
-        >&nbsp disable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
+        >&nbsp enable &nbsp</button>    <!--  format document is breaking my innerHTML !   -->
       </span>
     </div>
 

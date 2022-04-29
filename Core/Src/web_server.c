@@ -55,6 +55,8 @@ static void web_server_task(void *arg)
 					http_server_serve(newconn);		// serve connection
 					netconn_delete(newconn);		// delete connection
 				}
+
+				osDelay(2); // allow lower priority tasks
 			}
 		}
 	}
@@ -169,8 +171,8 @@ static void http_server_serve(struct netconn *conn) // new connection service
 extern int CH1_setting;
 extern int CH2_setting;
 extern int CH3_setting;
-extern int Relay1_setting;
-extern int Relay2_setting;
+extern int switch1_setting_flag;
+extern int switch2_setting_flag;
 extern int pulseMeasurementDelay;
 extern int watchdogState;
 extern int watchdogChannel;
@@ -207,7 +209,7 @@ static void send_all_settings(struct netconn *conn)
 										"\"watchdogAction1\" : \"%d\","
 										"\"watchdogAction2\" : \"%d\","
 										"\"Email_recepient\" : \"%s\""
-										"}", CH1_setting, CH2_setting, CH3_setting, Relay1_setting, Relay2_setting, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
+										"}", CH1_setting, CH2_setting, CH3_setting, switch1_setting_flag, switch2_setting_flag, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
 
 	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
 
@@ -281,7 +283,7 @@ void send_monitor_data(struct netconn *conn)
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\","
 											"\"watchdog_state\" : \"%d\""
-											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, Relay1_setting, Relay2_setting, watchdogState);
+											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, switch1_setting_flag, switch2_setting_flag, watchdogState);
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);

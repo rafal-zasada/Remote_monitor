@@ -567,8 +567,12 @@ err_t ethernetif_init(struct netif *netif)
   LWIP_ASSERT("netif != NULL", (netif != NULL));
 
 #if LWIP_NETIF_HOSTNAME
+#include "netbiosns.h" //
+
   /* Initialize interface hostname */
-  netif->hostname = "lwip";
+  netif->hostname = "monitor1";
+  netbiosns_init();
+  	netbiosns_set_name(netif->hostname);
 #endif /* LWIP_NETIF_HOSTNAME */
 
   netif->name[0] = IFNAME0;

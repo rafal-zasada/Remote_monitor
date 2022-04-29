@@ -5,7 +5,7 @@
  *      Author: Rafal
  */
 
-// This file is handling client GUI settings and displayed values
+// This file is handling client GUI settings, acquires input data, formats values for GUI and handles watchdog (user watchdog)
 
 #include "cmsis_os.h"
 #include "stdio.h"
@@ -17,16 +17,21 @@
 
 void application_core_task(void const *argument);
 static void read_monitor_values(void);
-static void receive_settings_mail_and_parse(void);
+static void processClientInstruction(void);
 static void monitor_data_to_string(void);
 static void ADC_raw_to_voltage(void);
+static void checkWatchdogTriggers(void);
 static void ExecuteWatchdogActions(int triggeringChannel);
-
+static void osTimerCallback(void const *argument);
 extern TIM_HandleTypeDef htim9;
 extern struct emailDAtaReceipient newEmail;
 
 osThreadId ApplicationCoreTaskHandle;
 osMailQId mailSettingsHandle;
+
+
+
+
 
 // Data format for reading setting sent by client (settings only)
 // First 3 characters - parameter
@@ -50,13 +55,13 @@ osMailQId mailSettingsHandle;
 int CH1_setting = ADC_FREE_RUN;
 int CH2_setting = ADC_TRIGGERED;
 int CH3_setting = ADC_FREE_RUN;
-int Relay1_setting = 1;  // relay setting = its value in other parts of the source code
-int Relay2_setting = 0;  // relay setting = its value in other parts of the source code
+int switch1_setting_flag = 0;  // switch setting = its value in other parts of the source code
+int switch2_setting_flag = 0;  // switch setting = its value in other parts of the source code
 int pulseMeasurementDelay = 3;
-int watchdogState = WATCHDOG_ENABLED;
+int watchdogState = WATCHDOG_DISABLED;
 int watchdogChannel = WATCHDOG_CHANNEL_CH1;
 int watchdogTriggerDirection = UPWARD;
-float watchdogThreshold = 23.4;
+float watchdogThreshold = 100;
 //int watchdogUnits = 2;	//	not used - to be removed
 int watchdogAction1 = 3;
 int watchdogAction2 = 4;
@@ -70,11 +75,23 @@ float voltage3 = -4.5;		// ADC3
 float temperature_TC1 = -15.3;
 float temperature_TC2 = -17.7;
 
+#define RANGE_2V 0
+#define RANGE_40V 1
+int ADC1_range = RANGE_2V;
+int ADC2_range = RANGE_2V;
+int ADC3_range = RANGE_2V;
+
+#define OPEN_SWITCH1 11
+#define OPEN_SWITCH2 21
+#define CLOSE_SWITCH1 10
+#define CLOSE_SWITCH2 20
+int timerCallbackArgument;
+
 monitorValuesType monitorValues;
 
 void app_core_init(void)
 {
-	osThreadDef(application_core, application_core_task, osPriorityNormal, 0, 400);  // macro, not a function
+	osThreadDef(application_core, application_core_task, osPriorityNormal, 0, 800);  // macro, not a function
 	ApplicationCoreTaskHandle = osThreadCreate(osThread(application_core), NULL);
 }
 
@@ -94,7 +111,9 @@ void application_core_task(void const *argument)
 	strncpy(newEmail.emailBody, "Tresc majla, jol :)\n", 40); // temporary for test
 
 
-	// ADC test only
+
+
+	// ADC test only - setting for lower range
 	  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
 	  */
 
@@ -102,47 +121,242 @@ void application_core_task(void const *argument)
 
 	  sConfig.Channel = ADC_CHANNEL_4;
 	  sConfig.Rank = ADC_REGULAR_RANK_1;
-	  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
 	  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	  {
 	    Error_Handler();
 	  }
-	  /* USER CODE BEGIN ADC1_Init 2 */
 
-	  /* USER CODE END ADC1_Init 2 */
+	  ADC_ChannelConfTypeDef sConfig_2 = {0};
+
+	  sConfig_2.Channel = ADC_CHANNEL_12;
+	  sConfig_2.Rank = ADC_REGULAR_RANK_1;
+	  sConfig_2.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+	  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig_2) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+
+	  ADC_ChannelConfTypeDef sConfig_3 = {0};
+
+	  sConfig_3.Channel = ADC_CHANNEL_9;
+	  sConfig_3.Rank = ADC_REGULAR_RANK_1;
+	  sConfig_3.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig_3) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
 
 
 	while(1)
 	{
 		osDelay(100);
 
-		receive_settings_mail_and_parse();
+		processClientInstruction();
 		read_monitor_values();
+		ADC_raw_to_voltage();
+		monitor_data_to_string();
+		checkWatchdogTriggers();
+
+
 
 		if(CH1_setting == ADC_TRIGGERED || CH2_setting == ADC_TRIGGERED || CH3_setting == ADC_TRIGGERED)
 		{
 			// if trigger is connected and running then interrupt flag will be already waiting - just cycle through it once to avoid unnecessary interrupts
-			// wrong - it will produce long delays
+
+
+
+			// !!!!!!     wrong - it will produce long delays
+
+
+
+
 			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 			HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 		}
 
-		ADC_raw_to_voltage();
-		monitor_data_to_string();
+
 	}
+}
+
+static void read_monitor_values(void)
+{
+	// variables for averaging
+	static int CH1_buffer[5] = {0};
+	static int CH2_buffer[5] = {0};
+	static int CH3_buffer[5] = {0};
+	static int bufferPosition = 0;
+
+	if(CH1_setting == ADC_FREE_RUN)	// ADC in free run mode
+	{
+		HAL_ADC_Start(&hadc1);
+
+		if(HAL_ADC_PollForConversion(&hadc1, 20) == 0)
+		{
+			CH1_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc1);
+			voltage1_raw = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
+		}
+	}
+	else
+	{
+		// voltage1_raw will be updated by interrupt
+	}
+
+	if(CH2_setting == ADC_FREE_RUN)	// ADC in free run mode
+	{
+		HAL_ADC_Start(&hadc2);
+
+		if(HAL_ADC_PollForConversion(&hadc2, 20) == 0)
+		{
+			CH2_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc2);
+			voltage2_raw = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
+		}
+	}
+	else
+	{
+		// voltage1_raw will be updated by interrupt
+	}
+
+	if(CH3_setting == ADC_FREE_RUN)	// ADC in free run mode
+	{
+		HAL_ADC_Start(&hadc3);
+
+		if(HAL_ADC_PollForConversion(&hadc3, 20) == 0)
+		{
+			CH3_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc3);
+			voltage3_raw = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
+		}
+	}
+	else
+	{
+		// voltage1_raw will be updated by interrupt
+	}
+
+	bufferPosition++;
+	if(bufferPosition == 5)
+		bufferPosition = 0;
+
+	// read temperatures
+
+	extern SPI_HandleTypeDef hspi3;
+	extern SPI_HandleTypeDef hspi4;
+	unsigned char test_SPI[4];
+	int data_in;
+	int TC_temperature_raw = 0;
+	int internal_temperature_raw = 0;
+	unsigned int TC1_error = 0;
+	unsigned int TC2_error = 0;
+	unsigned int TC1_open = 0;
+	unsigned int TC2_open = 0;
+
+
+	// reading TC1 temperature
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);	// chip select ON for TC1
+	HAL_SPI_Receive(&hspi3, test_SPI, 4, 500);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		// chip select OFF for TC1
+
+	data_in = 0;
+	data_in |= test_SPI[3] << 0;
+	data_in |= test_SPI[2] << 8;
+	data_in |= test_SPI[1] << 16;
+	data_in |= test_SPI[0] << 24;
+	TC1_error |= (data_in & 65536u);	// bit 16 - MAX31855 reading error
+	TC1_open |= (data_in & 1u);			// bit 0 - MAX31855 thermocouple open circuit
+
+
+	if(!TC1_error)
+	{
+		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC_temperature_raw = data_in >> 18;
+		temperature_TC1 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy?
+
+	//	printf("TC1 temparature = %0.2f\n", temperature_TC1);
+	//	printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+	}
+	else if(TC1_open)
+		temperature_TC1 = -888; // code for TC open circuit
+	else
+		temperature_TC1 = -999; // code for TC error
+
+
+
+
+	// reading TC2 temperature
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_RESET);	// chip select ON for TC2
+	HAL_Delay(1);
+	HAL_SPI_Receive(&hspi4, test_SPI, 4, 500);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);		// chip select OFF for TC2
+
+	// re-use temporary variables
+	data_in = 0;
+	data_in |= test_SPI[3] << 0;
+	data_in |= test_SPI[2] << 8;
+	data_in |= test_SPI[1] << 16;
+	data_in |= test_SPI[0] << 24;
+	TC2_error |= (data_in & 65536u);	// bit 16 - MAX31855 reading error
+	TC2_open |= (data_in & 1u);			// bit 0 - MAX31855 thermocouple open circuit
+
+//	printf("TC2 data= %d\n", data_in);
+
+	if(!TC2_error)
+	{
+		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC_temperature_raw = data_in >> 18;
+		temperature_TC2 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy
+
+//		printf("TC2 temparature = %0.2f\n", temperature_TC2);
+	//	printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+	}
+	else if(TC2_open)
+		temperature_TC2 = -888; // code for TC open circuit
+	else
+		temperature_TC2 = -999; // code for TC error
+
+
+
+
+
+	//**************
+
+
+
+
+}
+
+static void ADC_raw_to_voltage(void)
+{
+	if(ADC1_range == RANGE_2V)
+		voltage1 = (float)2 / 4095 * voltage1_raw - 1;
+	else // RANGE_40V
+		voltage1 = (float)40 / 4095 * voltage1_raw - 20;
+
+	if(ADC2_range == RANGE_2V)
+		voltage2 = (float)2 / 4095 * voltage2_raw - 1;
+	else // RANGE_40V
+		voltage2 = (float)40 / 4095 * voltage2_raw - 20;
+
+	if(ADC3_range == RANGE_2V)
+		voltage3 = (float)2 / 4095 * voltage3_raw - 1;
+	else // RANGE_40V
+		voltage3 = (float)40 / 4095 * voltage3_raw - 20;
+
+//	printf("ADC1 raw = %d\n", voltage1_raw);
+//	printf("voltage1 = %f\n", voltage1);
+
 }
 
 static void monitor_data_to_string(void)
 {
 	// voltage1 to string
 	if(voltage1 < 0 && voltage1 > -1)
-		snprintf(monitorValues.voltage1_str, 9, "%0.2f mV", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.0f mV", voltage1 * 1000);
 	else if(voltage1 <= -1 && voltage1 > -10)
 		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 <= -10)
 		snprintf(monitorValues.voltage1_str, 9, "%0.1f V", voltage1);
 	else if(voltage1 < 1 && voltage1 >= 0)
-		snprintf(monitorValues.voltage1_str, 9, "%0.2f mV", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.0f mV", voltage1 * 1000);
 	else if(voltage1 >= 1 && voltage1 < 10)
 		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 >= 10)
@@ -152,13 +366,13 @@ static void monitor_data_to_string(void)
 
 	// voltage2 float to string
 	if(voltage2 < 0 && voltage2 > -1)
-		snprintf(monitorValues.voltage2_str, 9, "%0.2f mV", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.0f mV", voltage2 * 1000);
 	else if(voltage2 <= -1 && voltage2 > -10)
 		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 <= -10)
 		snprintf(monitorValues.voltage2_str, 9, "%0.1f V", voltage2);
 	else if(voltage2 < 1 && voltage2 >= 0)
-		snprintf(monitorValues.voltage2_str, 9, "%0.2f mV", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.0f mV", voltage2 * 1000);
 	else if(voltage2 >= 1 && voltage2 < 10)
 		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 >= 10)
@@ -166,15 +380,15 @@ static void monitor_data_to_string(void)
 	else
 		snprintf(monitorValues.voltage2_str, 9, "0.00 V");	// 0
 
-	// voltag31 to string
+	// voltag3 to string
 	if(voltage3 < 0 && voltage3 > -1)
-		snprintf(monitorValues.voltage3_str, 9, "%0.2f mV", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.0f mV", voltage3 * 1000);
 	else if(voltage3 <= -1 && voltage3 > -10)
 		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 <= -10)
 		snprintf(monitorValues.voltage3_str, 9, "%0.1f V", voltage3);
 	else if(voltage3 < 1 && voltage3 >= 0)
-		snprintf(monitorValues.voltage3_str, 9, "%0.2f mV", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.0f mV", voltage3 * 1000);
 	else if(voltage3 >= 1 && voltage3 < 10)
 		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 >= 10)
@@ -184,11 +398,11 @@ static void monitor_data_to_string(void)
 	;	// avoid copiler warning
 
 	// temperature floats to strings
-	snprintf(monitorValues.temperature1_str, 6, "%0.2f", temperature_TC1);
-	snprintf(monitorValues.temperature2_str, 6, "%0.2f", temperature_TC2);
+	snprintf(monitorValues.temperature1_str, 7, "%0.2f C", temperature_TC1);
+	snprintf(monitorValues.temperature2_str, 7, "%0.2f C", temperature_TC2);
 }
 
-static void receive_settings_mail_and_parse(void)
+static void processClientInstruction(void)
 {
 	osEvent mailData; // (RTOS mail)
 	settingsMailDataType *newSettingsReceivedPtr;
@@ -226,15 +440,14 @@ static void receive_settings_mail_and_parse(void)
 
 		if(strncmp(receivedMessagePtr, "Re1", 3) == 0)
 		{
-			Relay1_setting = strtol(receivedMessagePtr + 4, NULL, 10);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, Relay1_setting);	// update LED
-		//	doo the same for watchdog actions, also initial state is not updated
+			switch1_setting_flag = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, switch1_setting_flag); // 0 output (FET gate) means open switch
 		}
 
 		if(strncmp(receivedMessagePtr, "Re2", 3) == 0)
 		{
-			Relay2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, Relay2_setting);	// update LED
+			switch2_setting_flag = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, switch2_setting_flag);
 		}
 
 		if(strncmp(receivedMessagePtr, "DEL", 3) == 0)
@@ -349,17 +562,27 @@ static void receive_settings_mail_and_parse(void)
 			else if(watchdogAction2 == 7)
 				strncpy(watchdogAction2String, "wait 60s + open Relay 2", 30);
 
+			if((int)temperature_TC1 == -888)	// thermocouple disconnected code
+			{
+				snprintf(monitorValues.temperature1_str, 9, "N/A");
+			}
+
+			if((int)temperature_TC2 == -888)	// thermocouple disconnected code
+			{
+				snprintf(monitorValues.temperature2_str, 9, "N/A");
+			}
+
 			strncpy(newEmail.emailRecipient, receivedMessagePtr + 4, EMAIL_RECIPIENT_MAX_LENGH);
 			strncpy(newEmail.emailSubject, "This is test email from Monitor1", EMAIL_SUBJECT_MAX_LENGH);
 
 			snprintf(testEmailBody, 400, "CH 1 voltage = %s\n"
 									     "CH 2 voltage = %s\n"
 										 "CH 3 voltage = %s\n"
-										 "TC 1 temperature = %s C\n"
-										 "TC 1 temperature = %s C\n\n"
+										 "TC 1 temperature = %s\n"
+										 "TC 2 temperature = %s\n\n"
 										 "Watchdog state = %s\n"
 										 "Watchdog settings:\n"
-										 "If CH%d is %s %f %s then %s and %s\n"
+										 "If CH%d is %s %0.2f %s then %s and %s\n"
 										 "Email for notifications: %s\n",
 										 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str,
 										 monitorValues.temperature2_str, watchdogStateString, watchdogChannel, watchdogTriggerEdgeString, watchdogThreshold, watchdogUnitsString,
@@ -373,123 +596,10 @@ static void receive_settings_mail_and_parse(void)
 	}
 }
 
-static void read_monitor_values(void)
+
+
+static void checkWatchdogTriggers(void)
 {
-	if(CH1_setting == ADC_FREE_RUN)	// ADC in free run mode
-	{
-		HAL_ADC_Start(&hadc1);
-
-		if(HAL_ADC_PollForConversion(&hadc1, 20) == 0)
-		{
-			voltage1_raw = HAL_ADC_GetValue(&hadc1);
-		}
-	}
-	else
-	{
-		// voltage1_raw will be updated by interrupt
-	}
-
-	if(CH2_setting == ADC_FREE_RUN)	// ADC in free run mode
-	{
-		HAL_ADC_Start(&hadc2);
-
-		if(HAL_ADC_PollForConversion(&hadc2, 20) == 0)
-		{
-			voltage2_raw = HAL_ADC_GetValue(&hadc2);
-		}
-	}
-	else
-	{
-		// voltage1_raw will be updated by interrupt
-	}
-
-	if(CH3_setting == ADC_FREE_RUN)	// ADC in free run mode
-	{
-		HAL_ADC_Start(&hadc3);
-
-		if(HAL_ADC_PollForConversion(&hadc3, 20) == 0)
-		{
-			voltage3_raw = HAL_ADC_GetValue(&hadc3);
-		}
-	}
-	else
-	{
-		// voltage1_raw will be updated by interrupt
-	}
-
-
-
-	//**************
-	// read temperatures here - to be implemented
-
-	extern SPI_HandleTypeDef hspi3;
-	extern SPI_HandleTypeDef hspi4;
-	unsigned char test_SPI[4];
-	int data_in;
-	int TC_temperature_raw = 0;
-	int internal_temperature_raw = 0;
-	unsigned int TC1_error = 0;
-	unsigned int TC2_error = 0;
-
-	// reading TC1 temperature
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);	// chip select ON for TC1
-	HAL_SPI_Receive(&hspi3, test_SPI, 4, 500);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		// chip select OFF for TC1
-
-	data_in = 0;
-	data_in |= test_SPI[3] << 0;
-	data_in |= test_SPI[2] << 8;
-	data_in |= test_SPI[1] << 16;
-	data_in |= test_SPI[0] << 24;
-	TC1_error |= (data_in & 65536u);	// bitwise AND with bit 16 (MAX31855 reading error)
-
-	if(!TC1_error)
-	{
-		internal_temperature_raw = (data_in >> 4) & 4095u;
-		TC_temperature_raw = data_in >> 18;
-		temperature_TC1 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy?
-
-		printf("TC1 temparature = %0.2f\n", temperature_TC1);
-		printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
-	}
-	else
-	{
-		printf("TC1 error\n\n");
-	}
-
-	// reading TC2 temperature
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_RESET);	// chip select ON for TC2
-	HAL_SPI_Receive(&hspi4, test_SPI, 4, 500);
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);		// chip select OFF for TC2
-
-	// re-use temporary variables
-	data_in = 0;
-	data_in |= test_SPI[3] << 0;
-	data_in |= test_SPI[2] << 8;
-	data_in |= test_SPI[1] << 16;
-	data_in |= test_SPI[0] << 24;
-	TC2_error |= (data_in & 65536u);	// bitwise AND with bit 16 (MAX31855 reading error)
-
-	if(!TC2_error)
-	{
-		internal_temperature_raw = (data_in >> 4) & 4095u;
-		TC_temperature_raw = data_in >> 18;
-		temperature_TC2 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy
-
-		printf("TC2 temparature = %0.2f\n", temperature_TC2);
-		printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
-	}
-	else
-	{
-		printf("TC2 error\n\n");}
-
-
-
-	//**************
-
-
-
-	// check watchdog condition
 	if(watchdogState == WATCHDOG_ENABLED)
 	{
 		if(watchdogChannel == WATCHDOG_CHANNEL_CH1)
@@ -580,15 +690,7 @@ static void read_monitor_values(void)
 	}
 }
 
-static void ADC_raw_to_voltage(void)
-{
-	// to be implemented
 
-	// for test
-	voltage1 = voltage1_raw;
-	voltage2 = voltage2_raw;
-	voltage3 = voltage3_raw;
-}
 
 static void ExecuteWatchdogActions(int triggeringChannel)
 {
@@ -603,12 +705,12 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	// <option value="7">wait 60s + open Relay 2</option>
 
 	#define SEND_EMAIL 		1
-	#define OPEN_RELAY_1 	2
-	#define OPEN_RELAY_2 	3
-	#define CLOSE_RELAY_1	4
-	#define CLOSE_RELAY_2	5
-	#define SEND_EMAIL_OPEN_RELAY_1   6
-	#define WAIT_60S_OPEN_RELAY_2	  7
+	#define OPEN_SWITCH_1 	2
+	#define OPEN_SWITCH_2 	3
+	#define CLOSE_SWITCH_1	4
+	#define CLOSE_SWITCH_2	5
+	#define SEND_EMAIL_OPEN_SWITCH_1   6
+	#define WAIT_60S_OPEN_SWITCH_2	  7
 
 	if(watchdogState == WATCHDOG_TRIGGERED)
 	{
@@ -638,11 +740,24 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	if(triggeringChannel == WATCHDOG_CHANNEL_TC2)
 		snprintf(watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH, "TC 2 temperature outside limit!");
 
+	printf("TC1 = %0.2f\n", temperature_TC1);
+
+	if((int)temperature_TC1 == -888)	// thermocouple disconnected
+	{
+		snprintf(monitorValues.temperature1_str, 9, "N/A");
+		printf("Executed N/A\n");
+	}
+
+
+	if((int)temperature_TC2 == -888)  // thermocouple disconnected
+		snprintf(monitorValues.temperature2_str, 9, "N/A");
+
+
 	snprintf(WatchdogEmailBody, EMAIL_BODY_MAX_SIZE, "CH 1 voltage = %s\n"
 										     "CH 2 voltage = %s\n"
 											 "CH 3 voltage = %s\n"
-											 "TC 1 temperature = %s C\n"
-											 "TC 1 temperature = %s C\n\n"
+											 "TC 1 temperature = %s\n"
+											 "TC 2 temperature = %s\n\n"
 											 "Watchdog was been disabled following this message. To re-enable watchdog visit website http://monitor1\n",
 											 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str,
 											 monitorValues.temperature1_str, monitorValues.temperature2_str);
@@ -650,25 +765,67 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	strncpy(newEmail.emailBody, WatchdogEmailBody, EMAIL_BODY_MAX_SIZE);
 	strncpy(newEmail.emailSubject, watchdogEmailSubject, EMAIL_SUBJECT_MAX_LENGH);
 
+	// action 1
 	if(watchdogAction1 == SEND_EMAIL)
 		osSignalSet(send_SSL_emailTaskHandle, 1); // send email
-	else if(watchdogAction1 == OPEN_RELAY_1)
-		Relay1_setting = 1;
-	else if(watchdogAction1 == OPEN_RELAY_2)
-		Relay2_setting = 1;
-	else if(watchdogAction1 == CLOSE_RELAY_1)
-		Relay1_setting = 0;
-	else if(watchdogAction1 == CLOSE_RELAY_2)
-		Relay2_setting = 0;
-	else if(watchdogAction1 == SEND_EMAIL_OPEN_RELAY_1)
+	else if(watchdogAction1 == OPEN_SWITCH_1)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+		switch1_setting_flag = 1;
+	}
+	else if(watchdogAction1 == OPEN_SWITCH_2)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+		switch2_setting_flag = 1;
+	}
+
+	else if(watchdogAction1 == CLOSE_SWITCH_1)
+		switch1_setting_flag = 0;
+	else if(watchdogAction1 == CLOSE_SWITCH_2)
+		switch2_setting_flag = 0;
+	else if(watchdogAction1 == SEND_EMAIL_OPEN_SWITCH_1)
 	{
 		osSignalSet(send_SSL_emailTaskHandle, 1);
-		Relay1_setting = 1;
+		switch1_setting_flag = 1;
 	}
-	else if(watchdogAction1 == WAIT_60S_OPEN_RELAY_2)
+	else if(watchdogAction1 == WAIT_60S_OPEN_SWITCH_2)
 	{
-		// use RTOS software timer?
-		Relay2_setting = 1;
+		timerCallbackArgument = OPEN_SWITCH2;
+		osTimerDef(SwitchTimer, osTimerCallback);
+
+		osTimerId osTimer1 = osTimerCreate(osTimer(SwitchTimer), osTimerOnce, NULL);
+
+		timerCallbackArgument = OPEN_SWITCH2;
+		osTimerStart(osTimer1, 2000);
+	}
+
+	// action 2
+	if(watchdogAction2 == SEND_EMAIL)
+		osSignalSet(send_SSL_emailTaskHandle, 1); // send email
+	else if(watchdogAction2 == OPEN_SWITCH_1)
+
+		switch1_setting_flag = 1;
+	else if(watchdogAction2 == OPEN_SWITCH_2)
+
+		switch2_setting_flag = 1;
+	else if(watchdogAction2 == CLOSE_SWITCH_1)
+		switch1_setting_flag = 0;
+	else if(watchdogAction2 == CLOSE_SWITCH_2)
+		switch2_setting_flag = 0;
+	else if(watchdogAction2 == SEND_EMAIL_OPEN_SWITCH_1)
+	{
+		osSignalSet(send_SSL_emailTaskHandle, 1);
+		switch1_setting_flag = 1;
+	}
+	else if(watchdogAction2 == WAIT_60S_OPEN_SWITCH_2)
+	{
+		timerCallbackArgument = OPEN_SWITCH2;
+		osTimerDef(SwitchTimer, osTimerCallback);
+
+		osTimerId osTimer1 = osTimerCreate(osTimer(SwitchTimer), osTimerOnce, NULL);
+
+		timerCallbackArgument = OPEN_SWITCH2;
+		osTimerStart(osTimer1, 2000);
 	}
 
 	watchdogState = WATCHDOG_TRIGGERED;
@@ -676,7 +833,15 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 {
+	// variables for averaging
+	static int CH1_buffer[5] = {0};
+	static int CH2_buffer[5] = {0};
+	static int CH3_buffer[5] = {0};
+	static int bufferPosition = 0;
+
 //	bug: if interrupt is triggered before TIM9 is running then application will freeze
+
+
 
 	printf("\nInterrupt triggered by GPIO\n");
 
@@ -687,26 +852,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse 
 	TIM9->SR &= !TIM_SR_UIF;	// clear update interrupt flag
 	while(!(TIM9->SR && TIM_SR_UIF));	// wait for update interrupt flag
 
-//	GPIOG->BSRR = GPIO_PIN_0 << 16;		// reset pin, 3 clock cycles
-
-	//	  // minimal version for ADC operation extracted from HAL_ADC_Start(&hadc1) and HAL_ADC_PollForConversion(&hadc1, 2000) (HAL_ADC_Start() must run once before)
-	//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR); 	  // Clear regular group conversion flag and overrun flag (To ensure of no unknown state from potential previous ADC operations)
-	//	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART; 	  // Enable the selected ADC software conversion for regular group
-	//	  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));		 // Check End of conversion flag  (wait indefinitely)
-	//	  voltage1_raw = HAL_ADC_GetValue(&hadc1);
-	//	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC); // Clear regular group conversion flag
-
 	// start conversion
 	if(CH1_setting != ADC_FREE_RUN)
 	{
 	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR);
 	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
+
 	if(CH2_setting != ADC_FREE_RUN)
 	{
 		  __HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_EOC | ADC_FLAG_OVR);
 		  (&hadc2)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
+
 	if(CH3_setting != ADC_FREE_RUN)
 	{
 		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_EOC | ADC_FLAG_OVR);
@@ -716,21 +874,42 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse 
 	// wait for EOC flag and read value
 	if(CH1_setting != ADC_FREE_RUN)
 	{
-		  while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));
-		  voltage1_raw = HAL_ADC_GetValue(&hadc1);
-		  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC);
+		while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));
+		CH1_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc1);
+		voltage1_raw = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
+		__HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
+
 	if(CH2_setting != ADC_FREE_RUN)
 	{
-		  while(!(__HAL_ADC_GET_FLAG((&hadc2), ADC_FLAG_EOC)));
-		  voltage2_raw = HAL_ADC_GetValue(&hadc2);
-		  __HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_STRT | ADC_FLAG_EOC);
+		while(!(__HAL_ADC_GET_FLAG((&hadc2), ADC_FLAG_EOC)));
+		CH2_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc2);
+		voltage2_raw = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
+		__HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
+
 	if(CH3_setting != ADC_FREE_RUN)
 	{
 		  while(!(__HAL_ADC_GET_FLAG((&hadc3), ADC_FLAG_EOC)));
-		  voltage3_raw = HAL_ADC_GetValue(&hadc3);
+		  CH3_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc3);
+		  voltage3_raw = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
 		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
+
+	bufferPosition++;
+	if(bufferPosition == 5)
+		bufferPosition = 0;
+}
+
+static void osTimerCallback(void const *argument)
+{
+	if(timerCallbackArgument == OPEN_SWITCH2)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);	 // 0 output (FET gate) means open switch
+		switch2_setting = 0;
+		printf("Timer callback execuded OPEN_SWITCH2\n\n");
+	}
+
+	//timerCallbackArgument = OPEN_SWITCH2;
 }
 
