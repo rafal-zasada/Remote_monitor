@@ -129,19 +129,24 @@ request_getMonitorReadings.onload = function () {
     else 
     document.getElementById('TC2_temp').innerText = serverDataParsed.temperature2 + " °C";
 
-    if (serverDataParsed.relay1 == "1") {
-        document.getElementById('Relay1').innerText = "Closed";
+    if (serverDataParsed.relay1 == "0") {
+        document.getElementById('Relay1').innerText = "Closed";         
     }
     else {
         document.getElementById('Relay1').innerText = "Opened";
     }
 
-    if (serverDataParsed.relay2 == "1") {
+    if (serverDataParsed.relay2 == "0") {
         document.getElementById('Relay2').innerText = "Closed";
     }
     else {
         document.getElementById('Relay2').innerText = "Opened";
     }
+
+    // update switches' dropdown menus
+    document.getElementById('Relay1_setting').value = serverDataParsed.relay1;
+    document.getElementById('Relay2_setting').value = serverDataParsed.relay2;
+
 
     if (serverDataParsed.watchdog_state == "2") {
         document.getElementById('watchdog_on_off_button').innerHTML = "&nbsp; enable &nbsp;";
@@ -213,12 +218,12 @@ function SettingsChangeRelay1(value) {
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
     request_postInstruction.send("Re1 " + value);
 
-    request_postInstruction.onload = function () {
-        if ("Re1 " + value == request_postInstruction.responseText) {
-            document.getElementById('Relay1_setting').value = valueTemp; // restore select field
-            console.log("Setting confirmed!");
-        }
-    }
+    // request_postInstruction.onload = function () {
+    //     if ("Re1 " + value == request_postInstruction.responseText) {
+    //         document.getElementById('Relay1_setting').value = valueTemp; // restore select field
+    //         console.log("Setting confirmed!");
+    //     }
+    // }
 }
 
 
@@ -230,12 +235,12 @@ function SettingsChangeRelay2(value) {
     request_postInstruction.open('POST', 'http://' + receivedHost_IP_string);
     request_postInstruction.send("Re2 " + value);
 
-    request_postInstruction.onload = function () {
-        if ("Re2 " + value == request_postInstruction.responseText) {
-            document.getElementById('Relay2_setting').value = valueTemp; // restore select field
-            console.log("Setting confirmed!");
-        }
-    }
+    // request_postInstruction.onload = function () {
+    //     if ("Re2 " + value == request_postInstruction.responseText) {
+    //         document.getElementById('Relay2_setting').value = valueTemp; // restore select field
+    //         console.log("Setting confirmed!");
+    //     }
+    // }
 }
 
 
