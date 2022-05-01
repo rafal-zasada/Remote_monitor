@@ -274,7 +274,7 @@ void send_monitor_data(struct netconn *conn)
 
 	char JSON_data[350] = {0};
 
-
+	// writing and reading variables below should use mutex, however it is not critical hence ignored
 	snprintf(JSON_data, sizeof(JSON_data),  "{\"voltage1\" : \"%s\","
 											"\"voltage2\" : \"%s\","
 											"\"voltage3\" : \"%s\","

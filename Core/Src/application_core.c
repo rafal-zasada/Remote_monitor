@@ -19,7 +19,7 @@ void application_core_task(void const *argument);
 static void read_monitor_values(void);
 static void processClientInstruction(void);
 static void monitor_data_to_string(void);
-static void ADC_raw_to_voltage(void);
+static void ADC_raw_to_voltage_and_averaging(void);
 static void ADC_range_selection(void);
 static void checkWatchdogTriggers(void);
 static void ExecuteWatchdogActions(int triggeringChannel);
@@ -36,6 +36,32 @@ osMailQId mailSettingsHandle;
 // Fifth, sixth, seventh character - parameter value
 #define ADC_FREE_RUN 0
 #define ADC_TRIGGERED 1
+#define RANGE_2V 0
+#define RANGE_40V 1
+
+int ADC1_range = RANGE_40V;
+int ADC2_range = RANGE_40V;
+int ADC3_range = RANGE_40V;
+static int voltage1_raw; // ADC1 reading
+static int voltage2_raw; // ADC2 reading
+static int voltage3_raw; // ADC3 reading
+float voltage1;
+float voltage2;
+float voltage3;
+float temperature_TC1;
+float temperature_TC2;
+int CH1_setting = ADC_FREE_RUN;
+int CH2_setting = ADC_TRIGGERED;
+int CH3_setting = ADC_FREE_RUN;
+int switch1_setting_flag = 0;
+int switch2_setting_flag = 0;
+int pulseMeasurementDelay = 3;
+
+// variables for averaging
+static float CH1_buffer[5];
+static float CH2_buffer[5];
+static float CH3_buffer[5];
+static int bufferPosition;
 
 #define WATCHDOG_DISABLED 0
 #define WATCHDOG_ENABLED 1
@@ -45,16 +71,13 @@ osMailQId mailSettingsHandle;
 #define WATCHDOG_CHANNEL_CH3 3
 #define WATCHDOG_CHANNEL_TC1 4
 #define WATCHDOG_CHANNEL_TC2 5
-
 #define UPWARD 1
 #define DOWNWORD 2
+#define OPEN_SWITCH1 11
+#define OPEN_SWITCH2 21
+#define CLOSE_SWITCH1 10
+#define CLOSE_SWITCH2 20
 
-int CH1_setting = ADC_FREE_RUN;
-int CH2_setting = ADC_TRIGGERED;
-int CH3_setting = ADC_FREE_RUN;
-int switch1_setting_flag = 0;
-int switch2_setting_flag = 0;
-int pulseMeasurementDelay = 3;
 int watchdogState = WATCHDOG_DISABLED;
 int watchdogChannel = WATCHDOG_CHANNEL_CH1;
 int watchdogTriggerDirection = UPWARD;
@@ -62,34 +85,7 @@ float watchdogThreshold = 100;
 //int watchdogUnits = 2;	//	not used - to be removed
 int watchdogAction1 = 3;
 int watchdogAction2 = 4;
-
-static int voltage1_raw; // ADC1 reading
-static int voltage2_raw; // ADC2 reading
-static int voltage3_raw; // ADC3 reading
-float voltage1;
-float voltage2;
-float voltage3;
-float temperature_TC1;
-float temperature_TC2;
-
-// variables for averaging
-static int CH1_buffer[5] = {0};
-static int CH2_buffer[5] = {0};
-static int CH3_buffer[5] = {0};
-static int bufferPosition = 0;
-
-#define RANGE_2V 0
-#define RANGE_40V 1
-int ADC1_range = RANGE_40V;
-int ADC2_range = RANGE_40V;
-int ADC3_range = RANGE_40V;
-
-#define OPEN_SWITCH1 11
-#define OPEN_SWITCH2 21
-#define CLOSE_SWITCH1 10
-#define CLOSE_SWITCH2 20
 int timerCallbackArgument;
-
 monitorValuesType monitorValues;
 
 void app_core_init(void)
@@ -108,7 +104,6 @@ void application_core_task(void const *argument)
 	HAL_ADC_Start(&hadc3);
 
 	HAL_TIM_Base_Start(&htim9);	// for delay of pulse measurement
-
 
 	// ADC initial input pin selection (range)
 	  ADC_ChannelConfTypeDef sConfig = {0};
@@ -144,15 +139,12 @@ void application_core_task(void const *argument)
 	while(1)
 	{
 		osDelay(100);
-
 		processClientInstruction();
 		ADC_range_selection();
 		read_monitor_values();
-		ADC_raw_to_voltage();
+		ADC_raw_to_voltage_and_averaging();
 		monitor_data_to_string();
 		checkWatchdogTriggers();
-
-
 
 		if(CH1_setting == ADC_TRIGGERED || CH2_setting == ADC_TRIGGERED || CH3_setting == ADC_TRIGGERED)
 		{
@@ -177,6 +169,9 @@ static void ADC_range_selection(void)
 {
 	ADC_ChannelConfTypeDef sConfig = {0};
 
+	printf("ADC1 raw avg. = %d\n", voltage1_raw);
+	printf("ADC1 range before = %d\n", ADC1_range);
+
 	// ADC1
 	if((voltage1 > 0.950 || voltage1 < -0.950) && (ADC1_range == RANGE_2V)) // switch to high range required?
 	{
@@ -186,13 +181,6 @@ static void ADC_range_selection(void)
 
 		if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 			Error_Handler();
-
-		// update averaging buffer items to threshold value to avoid overshot or undershot after switching range
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
 
 		ADC1_range = RANGE_40V;
 	}
@@ -204,13 +192,6 @@ static void ADC_range_selection(void)
 
 		if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 			Error_Handler();
-
-		// update averaging buffer items to threshold value to avoid overshot or undershot after range switching
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
 
 		ADC1_range = RANGE_2V;
 	}
@@ -225,13 +206,6 @@ static void ADC_range_selection(void)
 		if(HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
 			Error_Handler();
 
-		// update averaging buffer items to threshold value to avoid overshot or undershot after switching range
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
-
 		ADC2_range = RANGE_40V;
 	}
 	else if((voltage2 < 0.950 && voltage2 > -0.950) && (ADC2_range == RANGE_40V)) // switch to low range required?
@@ -242,13 +216,6 @@ static void ADC_range_selection(void)
 
 		if(HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
 			Error_Handler();
-
-		// update averaging buffer items to threshold value to avoid overshot or undershot after range switching
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
 
 		ADC2_range = RANGE_2V;
 	}
@@ -263,13 +230,6 @@ static void ADC_range_selection(void)
 		if(HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
 			Error_Handler();
 
-		// update averaging buffer items to threshold value to avoid overshot or undershot after switching range
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
-
 		ADC3_range = RANGE_40V;
 	}
 	else if((voltage3 < 0.950 && voltage3 > -0.950) && (ADC3_range == RANGE_40V)) // switch to low range required?
@@ -281,15 +241,10 @@ static void ADC_range_selection(void)
 		if(HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
 			Error_Handler();
 
-		// update averaging buffer items to threshold value to avoid overshot or undershot after range switching
-		CH1_buffer[0] = 2048;
-		CH1_buffer[1] = 2048;
-		CH1_buffer[2] = 2048;
-		CH1_buffer[3] = 2048;
-		CH1_buffer[4] = 2048;
-
 		ADC3_range = RANGE_2V;
 	}
+
+	printf("ADC1 range after = %d\n", ADC1_range);
 }
 
 static void read_monitor_values(void)
@@ -299,9 +254,8 @@ static void read_monitor_values(void)
 		HAL_ADC_Start(&hadc1);
 
 		if(HAL_ADC_PollForConversion(&hadc1, 20) == 0)
-		{
-			CH1_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc1);
-			voltage1_raw = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
+		{			 
+			voltage1_raw = HAL_ADC_GetValue(&hadc1);
 		}
 	}
 	else
@@ -315,8 +269,7 @@ static void read_monitor_values(void)
 
 		if(HAL_ADC_PollForConversion(&hadc2, 20) == 0)
 		{
-			CH2_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc2);
-			voltage2_raw = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
+			voltage2_raw = HAL_ADC_GetValue(&hadc2);
 		}
 	}
 	else
@@ -330,8 +283,7 @@ static void read_monitor_values(void)
 
 		if(HAL_ADC_PollForConversion(&hadc3, 20) == 0)
 		{
-			CH3_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc3);
-			voltage3_raw = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
+			voltage3_raw = HAL_ADC_GetValue(&hadc3);
 		}
 	}
 	else
@@ -339,9 +291,7 @@ static void read_monitor_values(void)
 		// voltage1_raw will be updated by interrupt
 	}
 
-	bufferPosition++;
-	if(bufferPosition == 5)
-		bufferPosition = 0;
+
 
 	// read temperatures
 
@@ -423,22 +373,30 @@ static void read_monitor_values(void)
 
 }
 
-static void ADC_raw_to_voltage(void)
+static void ADC_raw_to_voltage_and_averaging(void)
 {
 	if(ADC1_range == RANGE_2V)
-		voltage1 = (float)2 / 4095 * voltage1_raw - 1;
+		CH1_buffer[bufferPosition] = (float)2 / 4095 * voltage1_raw - 1;
 	else // RANGE_40V
-		voltage1 = (float)40 / 4095 * voltage1_raw - 20;
+		CH1_buffer[bufferPosition] = (float)40 / 4095 * voltage1_raw - 20;
 
 	if(ADC2_range == RANGE_2V)
-		voltage2 = (float)2 / 4095 * voltage2_raw - 1;
+		CH2_buffer[bufferPosition] = (float)2 / 4095 * voltage2_raw - 1;
 	else // RANGE_40V
-		voltage2 = (float)40 / 4095 * voltage2_raw - 20;
+		CH2_buffer[bufferPosition] = (float)40 / 4095 * voltage2_raw - 20;
 
 	if(ADC3_range == RANGE_2V)
-		voltage3 = (float)2 / 4095 * voltage3_raw - 1;
+		CH3_buffer[bufferPosition] = (float)2 / 4095 * voltage3_raw - 1;
 	else // RANGE_40V
-		voltage3 = (float)40 / 4095 * voltage3_raw - 20;
+		CH3_buffer[bufferPosition] = (float)40 / 4095 * voltage3_raw - 20;
+	
+	bufferPosition++;
+	if(bufferPosition == 5)
+		bufferPosition = 0;
+	
+	voltage1 = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
+	voltage2 = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
+	voltage3 = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
 }
 
 static void monitor_data_to_string(void)
@@ -948,17 +906,9 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 {
-	// variables for averaging
-	static int CH1_buffer[5] = {0};
-	static int CH2_buffer[5] = {0};
-	static int CH3_buffer[5] = {0};
-	static int bufferPosition = 0;
-
 //	bug: if interrupt is triggered before TIM9 is running then application will freeze
 
-
-
-	printf("\nInterrupt triggered by GPIO\n");
+	printf("\nISR triggered\n");
 
 	uint16_t timerValue = pulseMeasurementDelay * 217 - 110;
 
@@ -970,20 +920,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse 
 	// start conversion
 	if(CH1_setting != ADC_FREE_RUN)
 	{
-	  __HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR);
-	  (&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+		__HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR);
+		(&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
 	if(CH2_setting != ADC_FREE_RUN)
 	{
-		  __HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_EOC | ADC_FLAG_OVR);
-		  (&hadc2)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+		__HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_EOC | ADC_FLAG_OVR);
+		(&hadc2)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
 	if(CH3_setting != ADC_FREE_RUN)
 	{
-		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_EOC | ADC_FLAG_OVR);
-		  (&hadc3)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+		__HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_EOC | ADC_FLAG_OVR);
+		(&hadc3)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
 	// wait for EOC flag and read value
