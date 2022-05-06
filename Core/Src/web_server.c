@@ -168,11 +168,11 @@ static void http_server_serve(struct netconn *conn) // new connection service
 }
 
 
-extern int CH1_setting;
-extern int CH2_setting;
-extern int CH3_setting;
-extern int switch1_setting_flag;
-extern int switch2_setting_flag;
+extern int CH1_mode;
+extern int CH2_mode;
+extern int CH3_mode;
+extern int switch1_setting;
+extern int switch2_setting;
 extern int pulseMeasurementDelay;
 extern int watchdogState;
 extern int watchdogChannel;
@@ -209,7 +209,7 @@ static void send_all_settings(struct netconn *conn)
 										"\"watchdogAction1\" : \"%d\","
 										"\"watchdogAction2\" : \"%d\","
 										"\"Email_recepient\" : \"%s\""
-										"}", CH1_setting, CH2_setting, CH3_setting, switch1_setting_flag, switch2_setting_flag, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
+										"}", CH1_mode, CH2_mode, CH3_mode, switch1_setting, switch2_setting, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
 
 	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
 
@@ -283,7 +283,7 @@ void send_monitor_data(struct netconn *conn)
 											"\"relay1\" : \"%d\","
 											"\"relay2\" : \"%d\","
 											"\"watchdog_state\" : \"%d\""
-											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, switch1_setting_flag, switch2_setting_flag, watchdogState);
+											"}", monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str, monitorValues.temperature1_str, monitorValues.temperature2_str, switch1_setting, switch2_setting, watchdogState);
 
 	strcat(response, JSON_data);
 	netconn_write(conn, (const unsigned char*)(response), strlen(response), NETCONN_NOCOPY);

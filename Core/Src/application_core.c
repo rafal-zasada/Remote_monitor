@@ -50,11 +50,11 @@ float voltage2;
 float voltage3;
 float temperature_TC1;
 float temperature_TC2;
-int CH1_setting = ADC_FREE_RUN;
-int CH2_setting = ADC_TRIGGERED;
-int CH3_setting = ADC_FREE_RUN;
-int switch1_setting_flag = 0;
-int switch2_setting_flag = 0;
+int CH1_mode = ADC_FREE_RUN;
+int CH2_mode = ADC_FREE_RUN;
+int CH3_mode = ADC_FREE_RUN;
+int switch1_setting = 1;
+int switch2_setting = 1;
 int pulseMeasurementDelay = 3;
 
 // variables for averaging
@@ -146,21 +146,17 @@ void application_core_task(void const *argument)
 		monitor_data_to_string();
 		checkWatchdogTriggers();
 
-		if(CH1_setting == ADC_TRIGGERED || CH2_setting == ADC_TRIGGERED || CH3_setting == ADC_TRIGGERED)
+
+	//	move to to function process client instruction ???
+		if(CH1_mode == ADC_TRIGGERED || CH2_mode == ADC_TRIGGERED || CH3_mode == ADC_TRIGGERED)
 		{
-			// if trigger is connected and running then interrupt flag will be already waiting - just cycle through it once to avoid unnecessary interrupts
-
-
-
-			// !!!!!!     wrong - it will produce long delays
-
-
-
-
-			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-			HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+			HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+			HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 		}
-
+		else
+		{
+			HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
+		}
 
 	}
 }
@@ -169,8 +165,8 @@ static void ADC_range_selection(void)
 {
 	ADC_ChannelConfTypeDef sConfig = {0};
 
-	printf("ADC1 raw avg. = %d\n", voltage1_raw);
-	printf("ADC1 range before = %d\n", ADC1_range);
+//	printf("ADC1 raw avg. = %d\n", voltage1_raw);
+//	printf("ADC1 range before = %d\n", ADC1_range);
 
 	// ADC1
 	if((voltage1 > 0.950 || voltage1 < -0.950) && (ADC1_range == RANGE_2V)) // switch to high range required?
@@ -244,12 +240,12 @@ static void ADC_range_selection(void)
 		ADC3_range = RANGE_2V;
 	}
 
-	printf("ADC1 range after = %d\n", ADC1_range);
+//	printf("ADC1 range after = %d\n", ADC1_range);
 }
 
 static void read_monitor_values(void)
 {
-	if(CH1_setting == ADC_FREE_RUN)	// ADC in free run mode
+	if(CH1_mode == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc1);
 
@@ -263,7 +259,7 @@ static void read_monitor_values(void)
 		// voltage1_raw will be updated by interrupt
 	}
 
-	if(CH2_setting == ADC_FREE_RUN)	// ADC in free run mode
+	if(CH2_mode == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc2);
 
@@ -277,7 +273,7 @@ static void read_monitor_values(void)
 		// voltage1_raw will be updated by interrupt
 	}
 
-	if(CH3_setting == ADC_FREE_RUN)	// ADC in free run mode
+	if(CH3_mode == ADC_FREE_RUN)	// ADC in free run mode
 	{
 		HAL_ADC_Start(&hadc3);
 
@@ -478,29 +474,29 @@ static void processClientInstruction(void)
 
 		if(strncmp(receivedMessagePtr, "CH1", 3) == 0)
 		{
-			CH1_setting = strtol(receivedMessagePtr + 4 , NULL, 10);
+			CH1_mode = strtol(receivedMessagePtr + 4 , NULL, 10);
 		}
 
 		else if(strncmp(receivedMessagePtr, "CH2", 3) == 0)
 		{
-			CH2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			CH2_mode = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
 		if(strncmp(receivedMessagePtr, "CH3", 3) == 0)
 		{
-			CH3_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			CH3_mode = strtol(receivedMessagePtr + 4, NULL, 10);
 		}
 
 		if(strncmp(receivedMessagePtr, "Re1", 3) == 0)
 		{
-			switch1_setting_flag = strtol(receivedMessagePtr + 4, NULL, 10);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, !switch1_setting_flag);
+			switch1_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, !switch1_setting);
 		}
 
 		if(strncmp(receivedMessagePtr, "Re2", 3) == 0)
 		{
-			switch2_setting_flag = strtol(receivedMessagePtr + 4, NULL, 10);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, !switch2_setting_flag);
+			switch2_setting = strtol(receivedMessagePtr + 4, NULL, 10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, !switch2_setting);
 		}
 
 		if(strncmp(receivedMessagePtr, "DEL", 3) == 0)
@@ -822,31 +818,31 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	else if(watchdogAction1 == OPEN_SWITCH_1)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-		switch1_setting_flag = 1;
+		switch1_setting = 1;
 	}
 	else if(watchdogAction1 == OPEN_SWITCH_2)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-		switch2_setting_flag = 1;
+		switch2_setting = 1;
 	}
 
 	else if(watchdogAction1 == CLOSE_SWITCH_1)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-		switch1_setting_flag = 0;
+		switch1_setting = 0;
 	}
 
 	else if(watchdogAction1 == CLOSE_SWITCH_2)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-		switch2_setting_flag = 0;
+		switch2_setting = 0;
 	}
 
 	else if(watchdogAction1 == SEND_EMAIL_OPEN_SWITCH_1)
 	{
 		osSignalSet(send_SSL_emailTaskHandle, 1);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-		switch1_setting_flag = 1;
+		switch1_setting = 1;
 	}
 	else if(watchdogAction1 == WAIT_60S_OPEN_SWITCH_2)
 	{
@@ -864,32 +860,32 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	else if(watchdogAction2 == OPEN_SWITCH_1)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-		switch1_setting_flag = 1;
+		switch1_setting = 1;
 	}
 	else if(watchdogAction2 == OPEN_SWITCH_2)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-		switch2_setting_flag = 1;
+		switch2_setting = 1;
 	}
 
 	else if(watchdogAction2 == CLOSE_SWITCH_1)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-		switch1_setting_flag = 0;
+		switch1_setting = 0;
 		printf("Closing switch 1\n");
 	}
 
 	else if(watchdogAction2 == CLOSE_SWITCH_2)
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-		switch2_setting_flag = 0;
+		switch2_setting = 0;
 	}
 
 	else if(watchdogAction2 == SEND_EMAIL_OPEN_SWITCH_1)
 	{
 		osSignalSet(send_SSL_emailTaskHandle, 1);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-		switch1_setting_flag = 1;
+		switch1_setting = 1;
 	}
 	else if(watchdogAction2 == WAIT_60S_OPEN_SWITCH_2)
 	{
@@ -904,7 +900,8 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	watchdogState = WATCHDOG_TRIGGERED;
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
+// void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
+void EXTI9_5_IRQHandler(void)
 {
 //	bug: if interrupt is triggered before TIM9 is running then application will freeze
 
@@ -918,63 +915,56 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse 
 	while(!(TIM9->SR && TIM_SR_UIF));	// wait for update interrupt flag
 
 	// start conversion
-	if(CH1_setting != ADC_FREE_RUN)
+	if(CH1_mode != ADC_FREE_RUN)
 	{
 		__HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_EOC | ADC_FLAG_OVR);
 		(&hadc1)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
-	if(CH2_setting != ADC_FREE_RUN)
+	if(CH2_mode != ADC_FREE_RUN)
 	{
 		__HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_EOC | ADC_FLAG_OVR);
 		(&hadc2)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
-	if(CH3_setting != ADC_FREE_RUN)
+	if(CH3_mode != ADC_FREE_RUN)
 	{
 		__HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_EOC | ADC_FLAG_OVR);
 		(&hadc3)->Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 	}
 
 	// wait for EOC flag and read value
-	if(CH1_setting != ADC_FREE_RUN)
+	if(CH1_mode != ADC_FREE_RUN)
 	{
 		while(!(__HAL_ADC_GET_FLAG((&hadc1), ADC_FLAG_EOC)));
-		CH1_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc1);
-		voltage1_raw = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
+		voltage1_raw = HAL_ADC_GetValue(&hadc1);
 		__HAL_ADC_CLEAR_FLAG((&hadc1), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
 
-	if(CH2_setting != ADC_FREE_RUN)
+	if(CH2_mode != ADC_FREE_RUN)
 	{
 		while(!(__HAL_ADC_GET_FLAG((&hadc2), ADC_FLAG_EOC)));
-		CH2_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc2);
-		voltage2_raw = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
+		voltage2_raw = HAL_ADC_GetValue(&hadc2);
 		__HAL_ADC_CLEAR_FLAG((&hadc2), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
 
-	if(CH3_setting != ADC_FREE_RUN)
+	if(CH3_mode != ADC_FREE_RUN)
 	{
-		  while(!(__HAL_ADC_GET_FLAG((&hadc3), ADC_FLAG_EOC)));
-		  CH3_buffer[bufferPosition] = HAL_ADC_GetValue(&hadc3);
-		  voltage3_raw = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
-		  __HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_STRT | ADC_FLAG_EOC);
+		while(!(__HAL_ADC_GET_FLAG((&hadc3), ADC_FLAG_EOC)));
+		voltage3_raw = HAL_ADC_GetValue(&hadc3);
+		__HAL_ADC_CLEAR_FLAG((&hadc3), ADC_FLAG_STRT | ADC_FLAG_EOC);
 	}
 
-	bufferPosition++;
-	if(bufferPosition == 5)
-		bufferPosition = 0;
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
 }
 
 static void osTimerCallback(void const *argument)
 {
-	if(timerCallbackArgument == OPEN_SWITCH2)
+	if(timerCallbackArgument == OPEN_SWITCH2) // at the moment only one option
 	{
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);	 // 0 output (FET gate) means open switch
-		switch2_setting_flag = 1;
+		switch2_setting = 1;
 		printf("Timer callback execuded OPEN_SWITCH2\n\n");
 	}
-
-	//timerCallbackArgument = OPEN_SWITCH2;
 }
 
