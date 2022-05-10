@@ -24,6 +24,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -32,7 +33,7 @@
 #include "stdio.h"
 #include "application_core.h"
 #include "development_aid.h"
-
+#include "lwip.h"
 
 
 /* USER CODE END Includes */
@@ -182,11 +183,6 @@ void StartDefaultTask(void const * argument)
 	MX_LWIP_Init(); // added again because enabling embedtls in Cube removed it
 
 	osDelay(1000);
-//	osDelay(1);
-//
-//	asm("NOP");
-//	asm("NOP");
-
 
 	app_core_init();
 
@@ -199,6 +195,20 @@ void StartDefaultTask(void const * argument)
 	{
 		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
 		  HAL_Delay(200);
+
+		extern ETH_HandleTypeDef heth;
+		extern struct netif gnetif;
+		uint32_t regvalue = 0;
+
+	    HAL_ETH_ReadPHYRegister(&heth, PHY_BSR, &regvalue);
+	    regvalue &= PHY_LINKED_STATUS; // this is enough to check if cable is connected
+
+	    if(regvalue && gnetif.ip_addr.addr != 0)
+	    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET); 	// cable connected - LED on
+	    else
+	    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);		// cable disconnected - LED off
+
+
 	}
 
   /* USER CODE END StartDefaultTask */

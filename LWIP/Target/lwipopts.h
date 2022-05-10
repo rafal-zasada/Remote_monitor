@@ -57,12 +57,14 @@
 #define MEM_ALIGNMENT 4
 /*----- Default Value for MEM_SIZE: 1600 ---*/
 #define MEM_SIZE 10000
+/*----- Default Value for PBUF_POOL_BUFSIZE: 592 ---*/
+#define PBUF_POOL_BUFSIZE 2000
 /*----- Value in opt.h for LWIP_ETHERNET: LWIP_ARP || PPPOE_SUPPORT -*/
 #define LWIP_ETHERNET 1
 /*----- Value in opt.h for LWIP_DNS_SECURE: (LWIP_DNS_SECURE_RAND_XID | LWIP_DNS_SECURE_NO_MULTIPLE_OUTSTANDING | LWIP_DNS_SECURE_RAND_SRC_PORT) -*/
 #define LWIP_DNS_SECURE 7
 /*----- Default Value for TCP_MSS: 536 ---*/
-#define TCP_MSS 1426
+#define TCP_MSS 1072
 /*----- Value in opt.h for TCP_SND_QUEUELEN: (4*TCP_SND_BUF + (TCP_MSS - 1))/TCP_MSS -----*/
 #define TCP_SND_QUEUELEN 9
 /*----- Value in opt.h for TCP_SNDQUEUELOWAT: LWIP_MAX(TCP_SND_QUEUELEN)/2, 5) -*/
@@ -81,6 +83,8 @@
 #define SLIPIF_THREAD_STACKSIZE 1024
 /*----- Value in opt.h for SLIPIF_THREAD_PRIO: 1 -----*/
 #define SLIPIF_THREAD_PRIO 3
+/*----- Default Value for DEFAULT_THREAD_NAME: "lwIP" ---*/
+#define DEFAULT_THREAD_NAME "lwip"
 /*----- Value in opt.h for DEFAULT_THREAD_STACKSIZE: 0 -----*/
 #define DEFAULT_THREAD_STACKSIZE 1024
 /*----- Value in opt.h for DEFAULT_THREAD_PRIO: 1 -----*/

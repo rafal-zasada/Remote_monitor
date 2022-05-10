@@ -146,6 +146,8 @@ void application_core_task(void const *argument)
 		monitor_data_to_string();
 		checkWatchdogTriggers();
 
+//		printf("raw= %d   v= %0.2f  r= %d\n", voltage3_raw, voltage3, ADC3_range);
+
 
 	//	move to to function process client instruction ???
 		if(CH1_mode == ADC_TRIGGERED || CH2_mode == ADC_TRIGGERED || CH3_mode == ADC_TRIGGERED)
@@ -227,6 +229,8 @@ static void ADC_range_selection(void)
 			Error_Handler();
 
 		ADC3_range = RANGE_40V;
+
+		osDelay(1); // stabilise ?
 	}
 	else if((voltage3 < 0.950 && voltage3 > -0.950) && (ADC3_range == RANGE_40V)) // switch to low range required?
 	{
@@ -296,7 +300,7 @@ static void read_monitor_values(void)
 	unsigned char test_SPI[4];
 	int data_in;
 	int TC_temperature_raw = 0;
-	int internal_temperature_raw = 0;
+	int internal_temperature_raw = 0; // to be used for temperature adjustment
 	unsigned int TC1_error = 0;
 	unsigned int TC2_error = 0;
 	unsigned int TC1_open = 0;
@@ -390,9 +394,10 @@ static void ADC_raw_to_voltage_and_averaging(void)
 	if(bufferPosition == 5)
 		bufferPosition = 0;
 	
-	voltage1 = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5;
-	voltage2 = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5;
-	voltage3 = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5;
+	// calibration factor = 1.0227
+	voltage1 = (CH1_buffer[0] + CH1_buffer[1] + CH1_buffer[2] + CH1_buffer[3] + CH1_buffer[4]) / 5 * 1.0227;
+	voltage2 = (CH2_buffer[0] + CH2_buffer[1] + CH2_buffer[2] + CH2_buffer[3] + CH2_buffer[4]) / 5 * 1.0227;
+	voltage3 = (CH3_buffer[0] + CH3_buffer[1] + CH3_buffer[2] + CH3_buffer[3] + CH3_buffer[4]) / 5 * 1.0227;
 }
 
 static void monitor_data_to_string(void)
@@ -403,13 +408,13 @@ static void monitor_data_to_string(void)
 	else if(voltage1 <= -1 && voltage1 > -10)
 		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 <= -10)
-		snprintf(monitorValues.voltage1_str, 9, "%0.1f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 < 1 && voltage1 >= 0)
 		snprintf(monitorValues.voltage1_str, 9, "%0.0f mV", voltage1 * 1000);
 	else if(voltage1 >= 1 && voltage1 < 10)
 		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else if(voltage1 >= 10)
-		snprintf(monitorValues.voltage1_str, 9, "%0.1f V", voltage1);
+		snprintf(monitorValues.voltage1_str, 9, "%0.2f V", voltage1);
 	else
 		snprintf(monitorValues.voltage1_str, 9, "0.00 V");	// 0
 
@@ -419,13 +424,13 @@ static void monitor_data_to_string(void)
 	else if(voltage2 <= -1 && voltage2 > -10)
 		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 <= -10)
-		snprintf(monitorValues.voltage2_str, 9, "%0.1f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 < 1 && voltage2 >= 0)
 		snprintf(monitorValues.voltage2_str, 9, "%0.0f mV", voltage2 * 1000);
 	else if(voltage2 >= 1 && voltage2 < 10)
 		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else if(voltage2 >= 10)
-		snprintf(monitorValues.voltage2_str, 9, "%0.1f V", voltage2);
+		snprintf(monitorValues.voltage2_str, 9, "%0.2f V", voltage2);
 	else
 		snprintf(monitorValues.voltage2_str, 9, "0.00 V");	// 0
 
@@ -435,13 +440,13 @@ static void monitor_data_to_string(void)
 	else if(voltage3 <= -1 && voltage3 > -10)
 		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 <= -10)
-		snprintf(monitorValues.voltage3_str, 9, "%0.1f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 < 1 && voltage3 >= 0)
 		snprintf(monitorValues.voltage3_str, 9, "%0.0f mV", voltage3 * 1000);
 	else if(voltage3 >= 1 && voltage3 < 10)
 		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else if(voltage3 >= 10)
-		snprintf(monitorValues.voltage3_str, 9, "%0.1f V", voltage3);
+		snprintf(monitorValues.voltage3_str, 9, "%0.2f V", voltage3);
 	else
 		snprintf(monitorValues.voltage3_str, 9, "0.00 V");	// 0
 	;	// avoid copiler warning
@@ -903,9 +908,7 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 // void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)	// interrupt used only for pulse measurements (ADC triggered by external signal)
 void EXTI9_5_IRQHandler(void)
 {
-//	bug: if interrupt is triggered before TIM9 is running then application will freeze
-
-	printf("\nISR triggered\n");
+//	bug: if interrupt is triggered before TIM9 is running then application will freeze ?
 
 	uint16_t timerValue = pulseMeasurementDelay * 217 - 110;
 
@@ -956,6 +959,8 @@ void EXTI9_5_IRQHandler(void)
 	}
 
 	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_6);
+
+//	printf("!\n");
 }
 
 static void osTimerCallback(void const *argument)

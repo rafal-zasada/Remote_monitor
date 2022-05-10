@@ -98,10 +98,20 @@ void SSL_email_init(void)
 	send_SSL_emailTaskHandle = sys_thread_new("send_SSL_emailTask", send_SSL_email_thread, NULL, 1300, osPriorityNormal);
 
 //	temporary hard coded here for testing:
-	strncpy(emailSender.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
-	strncpy(emailSender.serverName, "smtp.gmail.com", 15); //
-	strncpy(emailSender.emailLogin_ASCII, "bob200506@gmail.com", 20);
-	strncpy(emailSender.emailPassword_ASCII, "Bob12345", 9);
+//	strncpy(emailSender.serverPort, "465", 4); // included null termination to avoid warnings. Seem to have no effect in further functions
+//	strncpy(emailSender.serverName, "smtp.mail.yahoo.com", 20); //
+//	strncpy(emailSender.emailLogin_ASCII, "test_monitor1@yahoo.com", 25);
+//	strncpy(emailSender.emailPassword_ASCII, "wzpojyntykzxhnqf", 17);
+
+	strcpy(emailSender.serverPort, "465");
+	strcpy(emailSender.serverName, "smtp.mail.yahoo.com"); //
+	strcpy(emailSender.emailLogin_ASCII, "test_monitor1@yahoo.com");
+	strcpy(emailSender.emailPassword_ASCII, "oofdvxbyzvvufacl");
+
+//	strcpy(emailSender.serverPort, "587");
+//	strcpy(emailSender.serverName, "smtp.gmail.com"); //
+//	strcpy(emailSender.emailLogin_ASCII, "bob200506@gmail.com");
+//	strcpy(emailSender.emailPassword_ASCII, "Bob12345");
 }
 
 static void send_SSL_email_thread(void *argument)
@@ -334,13 +344,14 @@ void send_SSL_email_data(char *recipient, char *emailSubject, char *emailBody)
 	send_len = strlen(send_buffer);
 	write_SSL_and_get_response(&ssl, (unsigned char*)send_buffer, send_len);
 
-	snprintf(send_buffer, sizeof(send_buffer), "From: Test Monitor 1\r\n"); // can be any name
-	send_len = strlen(send_buffer);
-	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
-
-	snprintf(send_buffer, sizeof(send_buffer), "To: CPI_Engineer\r\n"); // can be any name, probably not all mail providers will display it
-	send_len = strlen(send_buffer);
-	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
+	//optional. Fine for gmail but causing error for yahoo "mailbox unavailable" ???.
+//	snprintf(send_buffer, sizeof(send_buffer), "From: test_ggg\r\n"); // can be any name
+//	send_len = strlen(send_buffer);
+//	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
+//
+//	snprintf(send_buffer, sizeof(send_buffer), "To: CPI_Engineer\r\n"); // can be any name, probably not all mail providers will display it
+//	send_len = strlen(send_buffer);
+//	write_SLL_data(&ssl, (unsigned char*)send_buffer, send_len);
 
 	snprintf(send_buffer, sizeof(send_buffer), "Subject: %s\r\n\r\n", emailSubject);
 	send_len = strlen(send_buffer);
