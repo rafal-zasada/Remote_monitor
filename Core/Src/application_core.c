@@ -452,8 +452,8 @@ static void monitor_data_to_string(void)
 	;	// avoid copiler warning
 
 	// temperature floats to strings
-	snprintf(monitorValues.temperature1_str, 7, "%0.2f C", temperature_TC1);
-	snprintf(monitorValues.temperature2_str, 7, "%0.2f C", temperature_TC2);
+	snprintf(monitorValues.temperature1_str, 9, "%0.2f C", temperature_TC1);
+	snprintf(monitorValues.temperature2_str, 9, "%0.2f C", temperature_TC2);
 }
 
 static void processClientInstruction(void)

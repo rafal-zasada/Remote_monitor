@@ -129,17 +129,6 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 {
 	int len;
 
-	/*
-	 * 0. Initialize the RNG and the session data
-	 */
-//#ifdef MBEDTLS_MEMORY_BUFFER_ALLOC_C
-//	mbedtls_memory_buffer_alloc_init(memory_buf, sizeof(memory_buf));
-//#endif
-
-	osDelay(2000);
-
-	// mbedtls_net_init(NULL);  // not needed, MX_LWIP_Init() already called in default task. If you call it second time it will get stuck in timeouts.c
-
 	mbedtls_printf( "\n  . Seeding the random number generator..." );
 
 	len = strlen((char *)pers);
@@ -150,7 +139,6 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	}
 
 	mbedtls_printf( " ok\n" );
-
 
 	// 1. Initialize certificates
 
@@ -169,7 +157,8 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	//  Setting up local IP address and netmask could get it working. But the root cause of the ERR_RTE (Routing problem) is that the TCP/IP stack has not finished
 	//  setting up the ip/netmask/gw before netconn_connect is called. That should be a err because the ip/netmask/gw are probably empty at that time.
 	//  The solution would be delay netconn_connect() until proper IP configuration is done.
-	osDelay(500); // neccessary to give allow time for setting up the ip/netmask/gw
+
+//	osDelay(500); // neccessary to give allow time for setting up the ip/netmask/gw
 
 	// 2. Start the connection
 	int count = 0;
@@ -183,11 +172,10 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 		if((ret = mbedtls_net_connect(&server_fd, emailSender.serverName, emailSender.serverPort, MBEDTLS_NET_PROTO_TCP)) != 0) // connection unsuccessful
 		{
 			mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
-//			printf("Failed to connect on this occasion\n");
 			osDelay(500);
 		}
 
-		if(count == 5)
+		if(count == 3)
 		{
 			printf("\nConnecting to server failed\n");
 			goto exit;
@@ -279,7 +267,6 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 	mbedtls_printf( " %d Bytes read after connecting and before sending:\n %s\n", len, (char *) buf );
 	osDelay(100);
 
-//	void send_SSL_email(char *recipient, char *emailSubject, char *emailBody)
 	send_SSL_email_data(recipient, emailSubject, emailBody);
 	mbedtls_ssl_close_notify( &ssl );
 
@@ -294,7 +281,6 @@ void send_SSL_email(char *recipient, char *emailSubject, char *emailBody) // tho
 
 	if ((ret < 0) && (ret != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY))
 	{
-
 		printf("\nERROR occured here :((((((\n");
 		osDelay(1000);
 		// Error_Handler();

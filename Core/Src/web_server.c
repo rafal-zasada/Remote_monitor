@@ -77,7 +77,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 		{
 			netbuf_data(inbuf, (void**)&buf, &buflen);  // Get the data pointer and length of the data inside a netbuf.
 
-
 			// debug start
 			// print whole input buffer
 			// HAL_UART_Transmit(&huart3, (unsigned char*)buf , buflen, 200); // buf is not \0 terminated hence need to use buflen for UART transmit !
@@ -126,8 +125,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 
 				else if(strncmp((char const *)buf,"GET /get_host_IP", 16) == 0)
 				{
-			//		osDelay(300); // to test javascript asynchronicity and other things ***********************************************
-
 					char host_IP_string[17] = {0};
 					extern struct netif gnetif;
 					char response[100] = "HTTP/1.1 200 OK\r\n"
@@ -167,7 +164,6 @@ static void http_server_serve(struct netconn *conn) // new connection service
 	netbuf_delete(inbuf); // Delete the buffer (netconn_recv gives us ownership, so we have to make sure to deallocate the buffer)
 }
 
-
 extern int CH1_mode;
 extern int CH2_mode;
 extern int CH3_mode;
@@ -186,10 +182,6 @@ extern struct emailDAtaReceipient newEmail;
 static void send_all_settings(struct netconn *conn)
 {
 	char Message[600];
-
-
-
-	HAL_UART_Transmit(&huart3, (char unsigned*)"\nSend all settings triggered on server\n", 40, 200);
 
 	snprintf(Message, sizeof(Message), 	"HTTP/1.1 200 OK\r\n"
 										"Content-Type: text/html\r\n"
@@ -212,7 +204,6 @@ static void send_all_settings(struct netconn *conn)
 										"}", CH1_mode, CH2_mode, CH3_mode, switch1_setting, switch2_setting, pulseMeasurementDelay, watchdogState, watchdogChannel, watchdogTriggerDirection, watchdogThreshold, watchdogAction1, watchdogAction2, newEmail.emailRecipient);
 
 	netconn_write(conn, (signed char*)Message, strlen(Message), NETCONN_NOCOPY);
-
 }
 
 static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
@@ -223,7 +214,6 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 	{
 		messagePointer += 4; // skip 2 new line characters and point to POST body
 
-		// maximum expected length of the message (i.e. POST body) = 7 (string without \0 termination)
 		#define BUFFER_SIZE 70
 		char receivedMessage[BUFFER_SIZE] = {0};	// for nul termination of received string
 		u32_t receivedMessageLength = buflen - (messagePointer - buf);
@@ -254,12 +244,6 @@ static void read_POST(struct netconn *conn, char *buf, uint16_t buflen)
 		netconn_write(conn, (signed char*)serverResponse, strlen(serverResponse), NETCONN_NOCOPY); // send header and received message
 	}
 }
-
-//extern char voltage1_str[];
-//extern char voltage2_str[];
-//extern char voltage3_str[];
-//extern char temperature1_str[];
-//extern char temperature2_str[];
 
 void send_monitor_data(struct netconn *conn)
 {
