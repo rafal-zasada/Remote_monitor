@@ -292,6 +292,10 @@ static void read_monitor_values(void)
 	}
 
 
+	//debug
+//	printf("voltage3 raw = %d\n", voltage3_raw);
+//	printf("ADC3 range = %d\n", ADC3_range);
+
 
 	// read temperatures
 
@@ -300,7 +304,8 @@ static void read_monitor_values(void)
 	unsigned char test_SPI[4];
 	int data_in;
 	int TC_temperature_raw = 0;
-	int internal_temperature_raw = 0; // to be used for temperature adjustment
+	int TC1_internal_temperature_raw = 0; // to be used for temperature adjustment
+	int TC2_internal_temperature_raw = 0;
 	unsigned int TC1_error = 0;
 	unsigned int TC2_error = 0;
 	unsigned int TC1_open = 0;
@@ -323,12 +328,12 @@ static void read_monitor_values(void)
 
 	if(!TC1_error)
 	{
-		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC1_internal_temperature_raw = (data_in >> 4) & 4095u;
 		TC_temperature_raw = data_in >> 18;
-		temperature_TC1 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy?
+		temperature_TC1 = (float)TC_temperature_raw / 4 - TC1_internal_temperature_raw / 16 + 25.5;
 
-	//	printf("TC1 temparature = %0.2f\n", temperature_TC1);
-	//	printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+//		printf("TC1 temparature = %0.2f\n", temperature_TC1);
+//		printf("TC1 Internal temperature = %d\n\n", TC1_internal_temperature_raw / 16);
 	}
 	else if(TC1_open)
 		temperature_TC1 = -888; // code for TC open circuit
@@ -358,12 +363,12 @@ static void read_monitor_values(void)
 
 	if(!TC2_error)
 	{
-		internal_temperature_raw = (data_in >> 4) & 4095u;
+		TC2_internal_temperature_raw = (data_in >> 4) & 4095u;
 		TC_temperature_raw = data_in >> 18;
-		temperature_TC2 = (float)TC_temperature_raw / 4; // to be adjusted for accuracy
+		temperature_TC2 = (float)TC_temperature_raw / 4  - TC2_internal_temperature_raw / 16 + 25.5;
 
 //		printf("TC2 temparature = %0.2f\n", temperature_TC2);
-	//	printf("Internal temperature = %d\n\n", internal_temperature_raw / 16);
+//		printf("TC2 Internal temperature = %d\n\n", TC2_internal_temperature_raw / 16);
 	}
 	else if(TC2_open)
 		temperature_TC2 = -888; // code for TC open circuit
@@ -452,8 +457,8 @@ static void monitor_data_to_string(void)
 	;	// avoid copiler warning
 
 	// temperature floats to strings
-	snprintf(monitorValues.temperature1_str, 9, "%0.2f C", temperature_TC1);
-	snprintf(monitorValues.temperature2_str, 9, "%0.2f C", temperature_TC2);
+	snprintf(monitorValues.temperature1_str, 7, "%0.2f", temperature_TC1);
+	snprintf(monitorValues.temperature2_str, 7, "%0.2f", temperature_TC2);
 }
 
 static void processClientInstruction(void)
@@ -632,8 +637,8 @@ static void processClientInstruction(void)
 			snprintf(testEmailBody, 400, "CH 1 voltage = %s\n"
 									     "CH 2 voltage = %s\n"
 										 "CH 3 voltage = %s\n"
-										 "TC 1 temperature = %s\n"
-										 "TC 2 temperature = %s\n\n"
+										 "TC 1 temperature = %s C\n"
+										 "TC 2 temperature = %s C\n\n"
 										 "Watchdog state = %s\n"
 										 "Watchdog settings:\n"
 										 "If CH%d is %s %0.2f %s then %s and %s\n"
@@ -808,8 +813,8 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 	snprintf(WatchdogEmailBody, EMAIL_BODY_MAX_SIZE, "CH 1 voltage = %s\n"
 										     "CH 2 voltage = %s\n"
 											 "CH 3 voltage = %s\n"
-											 "TC 1 temperature = %s\n"
-											 "TC 2 temperature = %s\n\n"
+											 "TC 1 temperature = %s C\n"
+											 "TC 2 temperature = %s C\n\n"
 											 "Watchdog was been disabled following this message. To re-enable watchdog visit website http://monitor1\n",
 											 monitorValues.voltage1_str, monitorValues.voltage2_str, monitorValues.voltage3_str,
 											 monitorValues.temperature1_str, monitorValues.temperature2_str);
@@ -899,7 +904,7 @@ static void ExecuteWatchdogActions(int triggeringChannel)
 
 		osTimerId osTimer1 = osTimerCreate(osTimer(SwitchTimer), osTimerOnce, NULL);
 
-		osTimerStart(osTimer1, 2000);
+		osTimerStart(osTimer1, 60000);
 	}
 
 	watchdogState = WATCHDOG_TRIGGERED;

@@ -39,7 +39,7 @@ void GUI_UART_Task(void const *argument)
 			// overflowing its stack). Results are in words! Set configUSE_TRACE_FACILITY 1 and configUSE_STATS_FORMATTING_FUNCTIONS 1 to use this function.
 			// (Task  State   Prio    Stack    Num)
 			osThreadList((unsigned char*)GUI_buffer);
-			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer - 1, strlen(GUI_buffer) + 1, 200);
+			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);
 
 			snprintf(GUI_buffer, sizeof(GUI_buffer) - 1, "\nxPortGetFreeHeapSize() = %u\n", xPortGetFreeHeapSize());
 			HAL_UART_Transmit(&huart3, (unsigned char*)GUI_buffer, strlen(GUI_buffer) + 1, 200);

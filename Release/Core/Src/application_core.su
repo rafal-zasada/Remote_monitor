@@ -1,0 +1,6 @@
+../Core/Src/application_core.c:970:13:osTimerCallback	8	static
+../Core/Src/application_core.c:749:13:ExecuteWatchdogActions.part.0	624	static
+../Core/Src/application_core.c:749:13:ExecuteWatchdogActions	0	static
+../Core/Src/application_core.c:97:6:application_core_task	744	static
+../Core/Src/application_core.c:91:6:app_core_init	48	static
+../Core/Src/application_core.c:913:6:EXTI9_5_IRQHandler	16	static

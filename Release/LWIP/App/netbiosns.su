@@ -1,0 +1,4 @@
+../LWIP/App/netbiosns.c:347:1:netbiosns_recv	72	static
+../LWIP/App/netbiosns.c:478:1:netbiosns_init	8	static
+../LWIP/App/netbiosns.c:501:1:netbiosns_set_name	24	static
+../LWIP/App/netbiosns.c:524:1:netbiosns_stop	8	static

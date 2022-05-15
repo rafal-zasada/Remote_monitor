@@ -1,0 +1,7 @@
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:60:12:ssl_ticket_gen_key	48	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:90:12:ssl_ticket_update_keys.part.0	8	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:46:6:mbedtls_ssl_ticket_init	0	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:118:5:mbedtls_ssl_ticket_setup	16	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:281:5:mbedtls_ssl_ticket_write	88	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:379:5:mbedtls_ssl_ticket_parse	80	static
+../Middlewares/Third_Party/mbedTLS/library/ssl_ticket.c:473:6:mbedtls_ssl_ticket_free	8	static

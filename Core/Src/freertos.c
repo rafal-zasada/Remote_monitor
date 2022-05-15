@@ -190,25 +190,39 @@ void StartDefaultTask(void const * argument)
 	WebServerInit();
 	SSL_email_init();
 
+	// check if IP has been aquired after x seconds, if not reset device
+	extern ETH_HandleTypeDef heth;
+	extern struct netif gnetif;
+
+	for(int i = 0; i < 5; i++)
+	{
+		osDelay(1000);
+
+		if(gnetif.ip_addr.addr != 0)
+			break;
+
+		if(i == 2)
+		{
+			printf("Reset\n");
+			osDelay(100);
+			NVIC_SystemReset();
+		}
+	}
+
 	/* Infinite loop */
 	for(;;)
 	{
-		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-		  HAL_Delay(200);
-
-		extern ETH_HandleTypeDef heth;
-		extern struct netif gnetif;
 		uint32_t regvalue = 0;
 
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+		HAL_Delay(200);
 	    HAL_ETH_ReadPHYRegister(&heth, PHY_BSR, &regvalue);
 	    regvalue &= PHY_LINKED_STATUS; // this is enough to check if cable is connected
 
-	    if(regvalue && gnetif.ip_addr.addr != 0)
+	    if(regvalue && gnetif.ip_addr.addr != 0) // IP check not really needed here because program will never reach this point with IP = 0
 	    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET); 	// cable connected - LED on
 	    else
 	    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);		// cable disconnected - LED off
-
-
 	}
 
   /* USER CODE END StartDefaultTask */

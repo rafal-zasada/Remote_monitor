@@ -1,0 +1,4 @@
+../Core/Src/web_server.c:26:6:WebServerInit	16	static
+../Core/Src/web_server.c:280:6:Integer_to_IP	24	static
+../Core/Src/web_server.c:65:13:http_server_serve	1016	static
+../Core/Src/web_server.c:31:13:web_server_task	16	static
