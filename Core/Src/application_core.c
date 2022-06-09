@@ -330,7 +330,7 @@ static void read_monitor_values(void)
 	{
 		TC1_internal_temperature_raw = (data_in >> 4) & 4095u;
 		TC_temperature_raw = data_in >> 18;
-		temperature_TC1 = (float)TC_temperature_raw / 4 - TC1_internal_temperature_raw / 16 + 25.5;
+		temperature_TC1 = (float)TC_temperature_raw / 4; // - TC1_internal_temperature_raw / 16 + 25;
 
 //		printf("TC1 temparature = %0.2f\n", temperature_TC1);
 //		printf("TC1 Internal temperature = %d\n\n", TC1_internal_temperature_raw / 16);
@@ -365,7 +365,7 @@ static void read_monitor_values(void)
 	{
 		TC2_internal_temperature_raw = (data_in >> 4) & 4095u;
 		TC_temperature_raw = data_in >> 18;
-		temperature_TC2 = (float)TC_temperature_raw / 4  - TC2_internal_temperature_raw / 16 + 25.5;
+		temperature_TC2 = (float)TC_temperature_raw / 4; // - TC2_internal_temperature_raw / 16 + 25;
 
 //		printf("TC2 temparature = %0.2f\n", temperature_TC2);
 //		printf("TC2 Internal temperature = %d\n\n", TC2_internal_temperature_raw / 16);
